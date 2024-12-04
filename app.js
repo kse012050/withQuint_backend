@@ -2,6 +2,7 @@ const express = require('express');
 const mysql = require('mysql2');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
+const bcrypt = require('bcrypt');
 const cors = require('cors');
 
 const app = express();
@@ -35,18 +36,9 @@ app.get('/', (req, res, next)=>{
 })
 
 
-app.get('/user', (req, res, next)=>{
-    console.log(2);
-    
-    // console.log(req.body);
-    // req.body['userId'] = 'test3';
-    // req.body['password'] = 'test';
-    // req.body['nickname'] = 'test';
-    // req.body['mobile'] = 'test';
-    // req.body['termsOfService'] = 'y';
-    // req.body['privacyPolicy'] = 'y';
+app.post('/signUp', (req, res, next)=>{
     try{
-        db.query(`DESCRIBE users`,(err, result)=>{
+        db.query(`DESCRIBE users`,async (err, result)=>{
             const required = result.filter(data=> data.Key !== 'PRI' && data.Type !== 'datetime' && data.Null === 'NO').map(data=> data.Field)
             
             const noRequired = required.filter((key)=>!req.body[key])
@@ -55,9 +47,11 @@ app.get('/user', (req, res, next)=>{
                 res.status(400).json({result: false, error: `${noRequired.join(', ')} 값이 없습니다.`})
                 return;
             }
+          
+            const values = await Promise.all(
+                Object.entries(req.body).map(async ([key, value]) => key === 'password' ? await bcrypt.hash(value, 12) : value)
+            );
 
-            const values = Object.values(req.body).map((value)=>value)
-            
             db.query(
                 `
                     INSERT INTO users 
@@ -80,18 +74,19 @@ app.get('/user', (req, res, next)=>{
     }
 })
 
-app.post('/user/check', (req, res, next)=>{
+app.post('/signUp/check', (req, res, next)=>{
     console.log(req.body);
+    const { type, value } = req.body;
     
-    if(!req.body.type || !req.body.value) res.status(400).send(`${req.body.type} 값이 없습니다.`);
+    if(!type || !value) res.status(400).send(`${type} 값이 없습니다.`);
     db.query(
         `
-            SELECT ${req.body.type}
+            SELECT ${type}
             FROM users
-            WHERE ${req.body.type} = ?;
+            WHERE ${type} = ?;
         `,
         // req.body.userId,
-        req.body.value,
+        value,
         (error, result)=>{
             // console.log(result);
             res.status(200).json({result: !result.length, message: `사용할 수 ${result.length ? '없는' : '있는'} 아이디 입니다` });
