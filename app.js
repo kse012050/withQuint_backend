@@ -4,6 +4,8 @@ const morgan = require('morgan');
 const dotenv = require('dotenv');
 const bcrypt = require('bcrypt');
 const cors = require('cors');
+const session = require('express-session');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 
@@ -22,6 +24,8 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+app.use(cookieParser());
+
 app.use(cors({
     origin: 'http://localhost:3000',
     credentials: true
@@ -29,12 +33,92 @@ app.use(cors({
 
 db.connect();
 
+app.use(
+    session({
+      secret: 'your-secret-key',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        httpOnly: true,
+        secure: false,
+      },
+    })
+  );
+
 app.get('/', (req, res, next)=>{
     console.log(req);
-    console.log(res);
+    console.log(req.sessionID);
+    console.log(req.session.user);
+    console.log(req.session.password);
     res.end('test')
 })
 
+app.post('/test', (req, res, next)=>{
+    console.log(req.session);
+    console.log(req.session.id);
+    console.log(req.sessionID);
+    const sid = req.cookies['connect.sid'];
+    console.log(sid);  // 'connect.sid' 값을 출력
+    console.log(sid === req.sessionID);  // 'connect.sid' 값을 출력
+    // res.send(`connect.sid: ${sid}`);
+    
+})
+
+app.post('/signIn', (req, res, next)=>{
+    const { userId, password, authLogin } = req.body;
+    
+    try{
+        db.query(`SELECT userId, password FROM users WHERE userId = ?`,
+            [userId],
+            async (error, result)=>{
+                if(error){
+                    res.status(500).json({result: false, message: '서버 오류.'})
+                    throw error;
+                }
+                if(result.length){
+                    const [ user ] = result;
+                    
+                    let signInResult = await bcrypt.compare(password, user.password);
+                    let message = '' 
+                    
+                    if(signInResult){
+                        req.session.user = { userId: user.userId }
+                        message = '로그인 성공.'
+                        if(authLogin === 'y'){
+                            req.session.cookie.maxAge = 7 * 24 * 60 * 60 * 1000;
+                        }
+                    }else{
+                        message = '비밀번호가 일치하지 않습니다.'
+                    }
+                    console.log(req.sessionID);
+                    
+                    res.status(200).json({result: signInResult, message, session: req.session.user, sessionId: req.sessionID})
+                }else{
+                    res.status(200).json({result: false, message: '사용자가 존재하지 않습니다.'})
+                }
+
+            }
+        )
+    }catch(error){
+        console.error(error);
+        
+    }
+})
+
+app.post('/signIn/auth', (req, res, next)=>{
+    try{
+        let isLogin = !!req.session.user;
+        let message = ''
+        if(isLogin){
+            message = '로그인 상태입니다.'
+        }else{
+            message = '로그인 상태가 아닙니다.'
+        }
+        res.status(200).json({result: true, isLogin, message})
+    } catch (error){
+        console.error(error);
+    }
+})
 
 app.post('/signUp', (req, res, next)=>{
     try{
@@ -65,7 +149,7 @@ app.post('/signUp', (req, res, next)=>{
                         res.status(400).json({result: false, error: '서버 에러입니다.'})
                         throw error;
                     };
-                    res.status(200).json({result: true}).end()
+                    res.status(200).json({result: true})
                 }
             )
         })
