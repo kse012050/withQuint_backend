@@ -120,6 +120,24 @@ app.post('/signIn/auth', (req, res, next)=>{
     }
 })
 
+app.post('/logout', (req, res, next)=>{
+    try{
+        if(req.session){
+            req.session.destroy((err)=>{
+                if(err){
+                    res.status(500).json({result: false, message: '서버 오류.'})
+                    throw err;
+                }
+                res.status(200).json({ result: true, message: '로그아웃되었습니다.' });
+            })
+        } else {
+            res.status(200).json({ result: true, message: '로그인 상태가 아닙니다.' });
+        }
+    } catch (error){
+        console.error(error);
+    }
+})
+
 app.post('/signUp', (req, res, next)=>{
     try{
         db.query(`DESCRIBE users`,async (err, result)=>{
@@ -163,19 +181,26 @@ app.post('/signUp/check', (req, res, next)=>{
     const { type, value } = req.body;
     
     if(!type || !value) res.status(400).send(`${type} 값이 없습니다.`);
-    db.query(
-        `
-            SELECT ${type}
-            FROM users
-            WHERE ${type} = ?;
-        `,
-        // req.body.userId,
-        value,
-        (error, result)=>{
-            // console.log(result);
-            res.status(200).json({result: !result.length, message: `사용할 수 ${result.length ? '없는' : '있는'} 아이디 입니다` });
-        }
-    )
+    try {
+        db.query(
+            `
+                SELECT ${type}
+                FROM users
+                WHERE ${type} = ?;
+            `,
+            // req.body.userId,
+            value,
+            (error, result)=>{
+                if(error){
+                    res.status(400).json({result: false, error: '서버 에러입니다.'})
+                    throw error;
+                };
+                res.status(200).json({result: !result.length, message: `사용할 수 ${result.length ? '없는' : '있는'} 아이디 입니다` });
+            }
+        )
+    } catch (error){
+        console.error(error);
+    }
     
 })
 
