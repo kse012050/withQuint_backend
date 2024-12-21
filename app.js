@@ -5,6 +5,9 @@ const dotenv = require('dotenv');
 const bcrypt = require('bcrypt');
 const cors = require('cors');
 const session = require('express-session');
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const cookieParser = require('cookie-parser');
 
 const app = express();
@@ -43,7 +46,16 @@ app.use(
         secure: false,
       },
     })
-  );
+);
+
+
+
+// try{    
+
+// } catch(error){
+//     console.error(error);
+// }
+
 
 app.get('/', (req, res, next)=>{
     console.log(req);
@@ -53,14 +65,97 @@ app.get('/', (req, res, next)=>{
     res.end('test')
 })
 
-app.post('/test', (req, res, next)=>{
-    console.log(req.session);
-    console.log(req.session.id);
-    console.log(req.sessionID);
-    const sid = req.cookies['connect.sid'];
-    console.log(sid);  // 'connect.sid' 값을 출력
-    console.log(sid === req.sessionID);  // 'connect.sid' 값을 출력
-    // res.send(`connect.sid: ${sid}`);
+// 1. 업로드 폴더 설정
+const uploadFolder = path.join(__dirname, 'uploads');
+
+// 업로드 폴더가 없으면 생성
+if (!fs.existsSync(uploadFolder)) {
+    fs.mkdirSync(uploadFolder, { recursive: true });
+}
+
+const upload = multer({
+    storage: multer.diskStorage({
+        destination(req, file, cb){
+            cb(null, 'uploads/');
+        },
+        filename(req, file, cb){
+            console.log(file);
+            const ext = path.extname(file.originalname);
+            cb(null, path.basename(file.originalname, ext) + Date.now() + ext)
+        }
+    }),
+    limits: { fileSize: 5 * 1024 * 1024}
+});
+
+// app.post('/img', upload.single('image'), (req, res, next)=>{
+//     const image = req.file;
+//     console.log(image);
+//     res.status(200).json({
+//         message: 'File uploaded successfully',
+//         fileInfo: image,
+//     });
+// })
+
+app.post('/img', upload.single('image'), (req, res, next) => {
+    console.log('file', req.file);
+    console.log('image', req.image);
+    
+    const image = req.body.image;
+    console.log(image);
+    res.status(200).json({
+        message: 'File uploaded successfully',
+        fileInfo: image,
+    });
+});
+
+
+app.post('/vipProducts', upload.single('image'), (req, res, next)=>{
+    // console.log(req.body);
+    const image = req.file;
+    console.log(image);
+    console.log(req.body);
+    
+    try{
+        db.query(`DESCRIBE vipProducts`,async (err, result)=>{
+            const required = result.filter(data=> data.Key !== 'PRI' && data.Type !== 'datetime' && data.Null === 'NO').map(data=> data.Field)
+            
+            const noRequired = required.filter((key)=>!req.body[key])
+            
+            // if(noRequired.length){
+            //     res.status(400).json({result: false, error: `${noRequired.join(', ')} 값이 없습니다.`})
+            //     return;
+            // }
+          
+            const values = await Promise.all(
+                Object.entries(req.body).map(async ([key, value]) => value)
+            );
+
+            res.status(200).json({
+                message: 'File uploaded successfully',
+                fileInfo: image,
+            });
+
+            // db.query(
+            //     `
+            //         INSERT INTO users 
+            //         (${required.join(',')}, created)
+            //         VALUES (${required.map(()=>'?').join(',')}, NOW())
+            //     `,
+            //     values
+            //     ,
+            //     (error, result)=>{
+            //         if(error){
+            //             res.status(400).json({result: false, error: '서버 에러입니다.'})
+            //             throw error;
+            //         };
+            //         res.status(200).json({result: true})
+            //     }
+            // )
+
+        })
+    } catch(error){
+        console.error(error);
+    }
     
 })
 
