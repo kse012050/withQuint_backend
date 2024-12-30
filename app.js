@@ -26,6 +26,7 @@ app.set('port', process.env.PORT || 8001);
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use('/img', express.static(path.join(__dirname, 'uploads')));
 
 app.use(cookieParser());
 
@@ -112,28 +113,68 @@ app.post('/img', upload.single('image'), (req, res, next) => {
 app.post('/vipProducts', upload.single('image'), (req, res, next)=>{
     // console.log(req.body);
     const image = req.file;
-    console.log(image);
+    // console.log(image);
     console.log(req.body);
+    
     
     try{
         db.query(`DESCRIBE vipProducts`,async (err, result)=>{
             const required = result.filter(data=> data.Key !== 'PRI' && data.Type !== 'datetime' && data.Null === 'NO').map(data=> data.Field)
             
             const noRequired = required.filter((key)=>!req.body[key])
+            // console.log(required);
+            // console.log(noRequired);
             
-            // if(noRequired.length){
-            //     res.status(400).json({result: false, error: `${noRequired.join(', ')} 값이 없습니다.`})
-            //     return;
-            // }
+            if(noRequired.length){
+                res.status(400).json({result: false, error: `${noRequired.join(', ')} 값이 없습니다.`})
+                return;
+            }
           
-            const values = await Promise.all(
-                Object.entries(req.body).map(async ([key, value]) => value)
-            );
+            // const values = await Promise.all(
+            //     Object.entries(req.body).map(async ([key, value]) => value)
+            // );
+            const keys = []
+            const values = []
+            Object.entries(req.body).forEach(([key, value])=>{
+                keys.push(key);
+                values.push(value);
+            })
+            console.log(keys);
+            console.log(values);
+            
+            // console.log(values);
 
-            res.status(200).json({
-                message: 'File uploaded successfully',
-                fileInfo: image,
-            });
+            if(image){
+                keys.push('image')
+                values.push(`/img/${image.filename}`)
+            }
+            
+            db.query(
+                `
+                    INSERT INTO vipProducts 
+                    (${keys.join(',')}, created)
+                    VALUES (${keys.map(()=>'?').join(',')}, NOW())
+                `,
+                values
+                ,
+                (error, result)=>{
+                    console.log(result);
+                    console.log('-----------------------------');
+                    console.log('error', error);
+                    
+                    // if(error){
+                    //     res.status(400).json({result: false, error: '서버 에러입니다.'})
+                    //     throw error;
+                    // };
+                    console.log('AAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+                    res.status(200).json({result: true})
+                }
+            )
+
+            // res.status(200).json({
+            //     message: 'File uploaded successfully',
+            //     fileInfo: image,
+            // });
 
             // db.query(
             //     `
@@ -154,6 +195,7 @@ app.post('/vipProducts', upload.single('image'), (req, res, next)=>{
 
         })
     } catch(error){
+        console.error('A');
         console.error(error);
     }
     
