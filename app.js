@@ -2,7 +2,6 @@ const express = require('express');
 const mysql = require('mysql2');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
-const bcrypt = require('bcrypt');
 const cors = require('cors');
 const session = require('express-session');
 const path = require('path');
@@ -14,7 +13,9 @@ const app = express();
 
 dotenv.config();
 
-const signInRouter = require('./routes/singIn');
+const authRouter = require('./routes/auth');
+const signInRouter = require('./routes/signIn');
+const signUpRouter = require('./routes/signUp');
 
 const db = mysql.createConnection({
     host: 'localhost',
@@ -90,14 +91,6 @@ const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024}
 });
 
-// app.post('/img', upload.single('image'), (req, res, next)=>{
-//     const image = req.file;
-//     console.log(image);
-//     res.status(200).json({
-//         message: 'File uploaded successfully',
-//         fileInfo: image,
-//     });
-// })
 
 app.post('/img', upload.single('image'), (req, res, next) => {
     console.log('file', req.file);
@@ -113,10 +106,7 @@ app.post('/img', upload.single('image'), (req, res, next) => {
 
 
 app.post('/vipProducts', upload.single('image'), (req, res, next)=>{
-    // console.log(req.body);
     const image = req.file;
-    // console.log(image);
-    console.log(req.body);
     
     
     try{
@@ -124,27 +114,19 @@ app.post('/vipProducts', upload.single('image'), (req, res, next)=>{
             const required = result.filter(data=> data.Key !== 'PRI' && data.Type !== 'datetime' && data.Null === 'NO').map(data=> data.Field)
             
             const noRequired = required.filter((key)=>!req.body[key])
-            // console.log(required);
-            // console.log(noRequired);
-            
+          
             if(noRequired.length){
                 res.status(400).json({result: false, error: `${noRequired.join(', ')} 값이 없습니다.`})
                 return;
             }
           
-            // const values = await Promise.all(
-            //     Object.entries(req.body).map(async ([key, value]) => value)
-            // );
+          
             const keys = []
             const values = []
             Object.entries(req.body).forEach(([key, value])=>{
                 keys.push(key);
                 values.push(value);
             })
-            console.log(keys);
-            console.log(values);
-            
-            // console.log(values);
 
             if(image){
                 keys.push('image')
@@ -160,41 +142,9 @@ app.post('/vipProducts', upload.single('image'), (req, res, next)=>{
                 values
                 ,
                 (error, result)=>{
-                    console.log(result);
-                    console.log('-----------------------------');
-                    console.log('error', error);
-                    
-                    // if(error){
-                    //     res.status(400).json({result: false, error: '서버 에러입니다.'})
-                    //     throw error;
-                    // };
-                    console.log('AAAAAAAAAAAAAAAAAAAAAAAAAAAA');
                     res.status(200).json({result: true})
                 }
             )
-
-            // res.status(200).json({
-            //     message: 'File uploaded successfully',
-            //     fileInfo: image,
-            // });
-
-            // db.query(
-            //     `
-            //         INSERT INTO users 
-            //         (${required.join(',')}, created)
-            //         VALUES (${required.map(()=>'?').join(',')}, NOW())
-            //     `,
-            //     values
-            //     ,
-            //     (error, result)=>{
-            //         if(error){
-            //             res.status(400).json({result: false, error: '서버 에러입니다.'})
-            //             throw error;
-            //         };
-            //         res.status(200).json({result: true})
-            //     }
-            // )
-
         })
     } catch(error){
         console.error('A');
@@ -260,91 +210,91 @@ app.post('/vipProducts', upload.single('image'), (req, res, next)=>{
 //     }
 // })
 
-app.post('/logout', (req, res, next)=>{
-    try{
-        if(req.session){
-            req.session.destroy((err)=>{
-                if(err){
-                    res.status(500).json({result: false, message: '서버 오류.'})
-                    throw err;
-                }
-                res.status(200).json({ result: true, message: '로그아웃되었습니다.' });
-            })
-        } else {
-            res.status(200).json({ result: true, message: '로그인 상태가 아닙니다.' });
-        }
-    } catch (error){
-        console.error(error);
-    }
-})
+// app.post('/logout', (req, res, next)=>{
+//     try{
+//         if(req.session){
+//             req.session.destroy((err)=>{
+//                 if(err){
+//                     res.status(500).json({result: false, message: '서버 오류.'})
+//                     throw err;
+//                 }
+//                 res.status(200).json({ result: true, message: '로그아웃되었습니다.' });
+//             })
+//         } else {
+//             res.status(200).json({ result: true, message: '로그인 상태가 아닙니다.' });
+//         }
+//     } catch (error){
+//         console.error(error);
+//     }
+// })
 
-app.post('/signUp', (req, res, next)=>{
-    try{
-        db.query(`DESCRIBE users`,async (err, result)=>{
-            const required = result.filter(data=> data.Key !== 'PRI' && data.Type !== 'datetime' && data.Null === 'NO').map(data=> data.Field)
+// app.post('/signUp', (req, res, next)=>{
+//     try{
+//         db.query(`DESCRIBE users`,async (err, result)=>{
+//             const required = result.filter(data=> data.Key !== 'PRI' && data.Type !== 'datetime' && data.Null === 'NO').map(data=> data.Field)
             
-            const noRequired = required.filter((key)=>!req.body[key])
+//             const noRequired = required.filter((key)=>!req.body[key])
             
-            if(noRequired.length){
-                res.status(400).json({result: false, error: `${noRequired.join(', ')} 값이 없습니다.`})
-                return;
-            }
+//             if(noRequired.length){
+//                 res.status(400).json({result: false, error: `${noRequired.join(', ')} 값이 없습니다.`})
+//                 return;
+//             }
           
-            const values = await Promise.all(
-                Object.entries(req.body).map(async ([key, value]) => key === 'password' ? await bcrypt.hash(value, 12) : value)
-            );
+//             const values = await Promise.all(
+//                 Object.entries(req.body).map(async ([key, value]) => key === 'password' ? await bcrypt.hash(value, 12) : value)
+//             );
 
-            db.query(
-                `
-                    INSERT INTO users 
-                    (${required.join(',')}, created)
-                    VALUES (${required.map(()=>'?').join(',')}, NOW())
-                `,
-                values
-                ,
-                (error, result)=>{
-                    if(error){
-                        res.status(400).json({result: false, error: '서버 에러입니다.'})
-                        throw error;
-                    };
-                    res.status(200).json({result: true})
-                }
-            )
-        })
-    }catch(err){
-        console.error(err);
-    }
-})
+//             db.query(
+//                 `
+//                     INSERT INTO users 
+//                     (${required.join(',')}, created)
+//                     VALUES (${required.map(()=>'?').join(',')}, NOW())
+//                 `,
+//                 values
+//                 ,
+//                 (error, result)=>{
+//                     if(error){
+//                         res.status(400).json({result: false, error: '서버 에러입니다.'})
+//                         throw error;
+//                     };
+//                     res.status(200).json({result: true})
+//                 }
+//             )
+//         })
+//     }catch(err){
+//         console.error(err);
+//     }
+// })
 
-app.post('/signUp/check', (req, res, next)=>{
-    console.log(req.body);
-    const { type, value } = req.body;
+// app.post('/signUp/check', (req, res, next)=>{
+//     const { type, value } = req.body;
     
-    if(!type || !value) res.status(400).send(`${type} 값이 없습니다.`);
-    try {
-        db.query(
-            `
-                SELECT ${type}
-                FROM users
-                WHERE ${type} = ?;
-            `,
-            // req.body.userId,
-            value,
-            (error, result)=>{
-                if(error){
-                    res.status(400).json({result: false, error: '서버 에러입니다.'})
-                    throw error;
-                };
-                res.status(200).json({result: !result.length, message: `사용할 수 ${result.length ? '없는' : '있는'} 아이디 입니다` });
-            }
-        )
-    } catch (error){
-        console.error(error);
-    }
-    
-})
+//     if(!type || !value) res.status(400).send(`${type} 값이 없습니다.`);
+//     try {
+//         db.query(
+//             `
+//                 SELECT ${type}
+//                 FROM users
+//                 WHERE ${type} = ?;
+//             `,
+//             // req.body.userId,
+//             value,
+//             (error, result)=>{
+//                 if(error){
+//                     res.status(400).json({result: false, error: '서버 에러입니다.'})
+//                     throw error;
+//                 };
+//                 res.status(200).json({result: !result.length, message: `사용할 수 ${result.length ? '없는' : '있는'} 아이디 입니다` });
+//             }
+//         )
+//     } catch (error){
+//         console.error(error);
+//     }
+// })
 
-app.use('/signIn', signInRouter)
+app.use('/', authRouter);
+app.use('/signIn', signInRouter);
+app.use('/signUp', signUpRouter);
 
 // 404 에러 미들웨어
 app.use((req, res, next)=>{
@@ -355,7 +305,9 @@ app.use((req, res, next)=>{
 
 // 에러 미들웨어
 app.use((err, req, res, next)=>{
-    console.error(err);
+    // console.error(err);
+    console.log('에러 미들웨어');
+    res.status(500).json({result: false, error: '서버 에러입니다.'})
 })
 
 
