@@ -1,7 +1,7 @@
 const db = require("../config/db")
 
 
-const asyncHandler = (fn) => {
+const tryCatch = (fn) => {
     return (req, res, next) => {
         Promise.resolve(fn(req, res, next)).catch(next)
     }
@@ -18,4 +18,4 @@ const dbQuery = (sql, values) => {
     })
 }
 
-module.exports = { asyncHandler, dbQuery };
+module.exports = { tryCatch, dbQuery };

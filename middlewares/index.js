@@ -1,7 +1,7 @@
 const db = require('../config/db');
 
-exports.required = (req, res, next) => {
-    let schemaName;
+exports.required = async(req, res, next) => {
+    let schemaName = req.originalUrl.split('/')[1];
     
     if(req.originalUrl === '/signUp'){
         schemaName = 'users';
@@ -10,7 +10,9 @@ exports.required = (req, res, next) => {
     try {
         db.query(`DESCRIBE ${schemaName}`,async (error, result)=>{
             if(error) {
-                throw error;
+                // throw error;
+                next(error)
+                return
             }
             // 데이터 베이스 필수 필드 확인
             const required = result.filter(data=> data.Key !== 'PRI' && data.Type !== 'datetime' && data.Null === 'NO').map(data=> data.Field)
@@ -23,11 +25,13 @@ exports.required = (req, res, next) => {
                 return;
             }else{
                 req.fields = required;
+                req.DBName = schemaName;
                 next();
             }
 
         })
     } catch (error) {
         console.error(error);
+        next(error)
     }
 }

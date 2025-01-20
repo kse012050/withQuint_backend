@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const cookieParser = require('cookie-parser');
+const imgUpload = require('./uploads');
 
 const app = express();
 
@@ -16,6 +17,7 @@ dotenv.config();
 const authRouter = require('./routes/auth');
 const signInRouter = require('./routes/signIn');
 const signUpRouter = require('./routes/signUp');
+const vipProductsRouter = require('./routes/vipProducts');
 
 const db = mysql.createConnection({
     host: 'localhost',
@@ -71,6 +73,7 @@ app.get('/', (req, res, next)=>{
 
 // 1. 업로드 폴더 설정
 const uploadFolder = path.join(__dirname, 'uploads');
+console.log(__dirname);
 
 // 업로드 폴더가 없으면 생성
 if (!fs.existsSync(uploadFolder)) {
@@ -92,66 +95,73 @@ const upload = multer({
 });
 
 
-app.post('/img', upload.single('image'), (req, res, next) => {
-    console.log('file', req.file);
-    console.log('image', req.image);
+// app.post('/img', upload.single('image'), (req, res, next) => {
+//     console.log('file', req.file);
+//     console.log('image', req.image);
     
-    const image = req.body.image;
-    console.log(image);
-    res.status(200).json({
-        message: 'File uploaded successfully',
-        fileInfo: image,
-    });
-});
+//     const image = req.body.image;
+//     console.log(image);
+//     res.status(200).json({
+//         message: 'File uploaded successfully',
+//         fileInfo: image,
+//     });
+// });
 
+// app.post('/vipProducts/create', imgUpload, (req, res, next)=>{
+//     console.log(req.body);
 
-app.post('/vipProducts', upload.single('image'), (req, res, next)=>{
-    const image = req.file;
-    
-    
-    try{
-        db.query(`DESCRIBE vipProducts`,async (err, result)=>{
-            const required = result.filter(data=> data.Key !== 'PRI' && data.Type !== 'datetime' && data.Null === 'NO').map(data=> data.Field)
+// })
+// app.post('/vipProducts/create', imgUpload, (req, res, next)=>{
+//     console.log(req.body);
+//     console.log('??');
+        
+//     const image = req.file;
+//     console.log('??');
+//     console.log(image);
+
+//     try{
+//         db.query(`DESCRIBE vip_products`,async (err, result)=>{
+//             const required = result.filter(data=> data.Key !== 'PRI' && data.Type !== 'datetime' && data.Null === 'NO').map(data=> data.Field)
             
-            const noRequired = required.filter((key)=>!req.body[key])
+//             const noRequired = required.filter((key)=>!req.body[key])
           
-            if(noRequired.length){
-                res.status(400).json({result: false, error: `${noRequired.join(', ')} 값이 없습니다.`})
-                return;
-            }
+//             if(noRequired.length){
+//                 res.status(400).json({result: false, error: `${noRequired.join(', ')} 값이 없습니다.`})
+//                 return;
+//             }
           
           
-            const keys = []
-            const values = []
-            Object.entries(req.body).forEach(([key, value])=>{
-                keys.push(key);
-                values.push(value);
-            })
+//             const keys = []
+//             const values = []
+//             Object.entries(req.body).forEach(([key, value])=>{
+//                 keys.push(key);
+//                 values.push(value);
+//             })
 
-            if(image){
-                keys.push('image')
-                values.push(`/img/${image.filename}`)
-            }
+//             if(image){
+//                 keys.push('image')
+//                 values.push(`/img/${image.filename}`)
+//             }
             
-            db.query(
-                `
-                    INSERT INTO vipProducts 
-                    (${keys.join(',')}, created)
-                    VALUES (${keys.map(()=>'?').join(',')}, NOW())
-                `,
-                values
-                ,
-                (error, result)=>{
-                    res.status(200).json({result: true})
-                }
-            )
-        })
-    } catch(error){
-        console.error('A');
-        console.error(error);
-    }
+//             db.query(
+//                 `
+//                     INSERT INTO vip_products 
+//                     (${keys.join(',')}, created)
+//                     VALUES (${keys.map(()=>'?').join(',')}, NOW())
+//                 `,
+//                 values
+//                 ,
+//                 (error, result)=>{
+//                     res.status(200).json({result: true})
+//                 }
+//             )
+//         })
+//     } catch(error){
+//         console.error('A');
+//         console.error(error);
+//     }
     
-})
+// })
 
 
 
@@ -295,6 +305,7 @@ app.post('/vipProducts', upload.single('image'), (req, res, next)=>{
 app.use('/', authRouter);
 app.use('/signIn', signInRouter);
 app.use('/signUp', signUpRouter);
+app.use('/vipProducts', vipProductsRouter);
 
 // 404 에러 미들웨어
 app.use((req, res, next)=>{
@@ -306,6 +317,7 @@ app.use((req, res, next)=>{
 // 에러 미들웨어
 app.use((err, req, res, next)=>{
     // console.error(err);
+
     console.log('에러 미들웨어');
     res.status(500).json({result: false, error: '서버 에러입니다.'})
 })
