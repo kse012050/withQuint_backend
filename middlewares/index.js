@@ -12,8 +12,10 @@ exports.required = (req, res, next) => {
             if(error) {
                 throw error;
             }
+            // 데이터 베이스 필수 필드 확인
             const required = result.filter(data=> data.Key !== 'PRI' && data.Type !== 'datetime' && data.Null === 'NO').map(data=> data.Field)
             
+            // 필수 값 중 들어온 값이 없을 때 리스트 생성
             const noRequired = required.filter((key)=>!req.body[key])
 
             if(noRequired.length){

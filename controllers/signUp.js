@@ -1,34 +1,53 @@
 const db = require('../config/db');
 const bcrypt = require('bcrypt');
-const { asyncHandler, dbQuery } = require('../utils/error');
+const { asyncHandler, dbQuery } = require('../utils');
 
-exports.signUp = async(req, res, next) => {
+// exports.signUp = async(req, res, next) => {
     
-    try{
-        const values = await Promise.all(
-            Object.entries(req.body).map(async ([key, value]) => key === 'password' ? await bcrypt.hash(value, 12) : value)
-        );
+//     try{
+//         const values = await Promise.all(
+//             Object.entries(req.body).map(async ([key, value]) => key === 'password' ? await bcrypt.hash(value, 12) : value)
+//         );
 
-        db.query(
-            `
-                INSERT INTO users 
-                (${req.fields.join(',')}, created)
-                VALUES (${req.fields.map(()=>'?').join(',')}, NOW())
-            `,
-            values
-            ,
-            (error, result)=>{
-                if(error){
-                    next();
-                    return;
-                };
-                res.status(200).json({result: true})
-            }
-        )
-    }catch(error){
-        console.error(error);
-    }
-}
+//         db.query(
+//             `
+//                 INSERT INTO users 
+//                 (${req.fields.join(',')}, created)
+//                 VALUES (${req.fields.map(()=>'?').join(',')}, NOW())
+//             `,
+//             values
+//             ,
+//             (error, result)=>{
+//                 if(error){
+//                     next();
+//                     return;
+//                 };
+//                 res.status(200).json({result: true})
+//             }
+//         )
+//     }catch(error){
+//         console.error(error);
+//     }
+// }
+
+exports.signUp = asyncHandler(async(req, res) => {
+    const values = await Promise.all(
+        Object.entries(req.body).map(async ([key, value]) => key === 'password' ? await bcrypt.hash(value, 12) : value)
+    );
+
+    /* const result =  */await dbQuery(
+        `
+            INSERT INTO users 
+            (${req.fields.join(',')}, created)
+            VALUES (${req.fields.map(()=>'?').join(',')}, NOW())
+        `,
+        values
+    );
+    // console.log(result);
+    
+
+    res.status(200).json({result: true})
+})
 
 // exports.check = (req, res, next) => {
 //     // const { type, value } = req.body;
