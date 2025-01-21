@@ -33,6 +33,4 @@ const imgUpload = (req, res, next) => {
     });
 };
 
-// module.exports = { imgUpload }
-// exports.imgUpload = imgUpload;
 module.exports = imgUpload;

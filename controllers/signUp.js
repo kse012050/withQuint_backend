@@ -6,22 +6,22 @@ exports.signUp = tryCatch(async(req, res) => {
         Object.entries(req.body).map(async ([key, value]) => key === 'password' ? await bcrypt.hash(value, 12) : value)
     );
 
-    /* const result =  */await dbQuery(
+    await dbQuery(
         `
-            INSERT INTO users 
+            INSERT INTO ${req.DBName} 
             (${req.fields.join(',')}, created)
             VALUES (${req.fields.map(()=>'?').join(',')}, NOW())
         `,
         values
     );
-    // console.log(result);
-    
 
     res.status(200).json({result: true})
 })
 
 exports.check = tryCatch(async(req, res) => {
     const { type, value } = req.body;
+    console.log(req.DBName, 111);
+    
     
     if(!type || !value) {
         const errValues = ['type', 'value'].filter((key) => !req.body[key]);
@@ -32,7 +32,7 @@ exports.check = tryCatch(async(req, res) => {
     const result = await dbQuery(
         `
             SELECT ${type}
-            FROM users
+            FROM ${req.DBName}
             WHERE ${type} = ?;
         `,
         value

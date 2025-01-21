@@ -3,13 +3,12 @@ const { tryCatch, dbQuery } = require('../utils');
 
 exports.signIn = tryCatch(async(req, res, next) => {
     let { userId, password, authLogin } = req.body;
+    
     // 유저 아이디 확인
-    const [ user ] = await dbQuery(`SELECT userId, password FROM users WHERE userId = ?`, userId);
-    console.log(user);
+    const [ user ] = await dbQuery(`SELECT userId, password FROM ${req.DBName} WHERE userId = ?`, userId);
 
     // 유저 비밀번호 확인
     const result = await bcrypt.compare(password, user.password);
-    // console.log(result);
 
     const message = result ? '로그인 성공' : '비밀번호가 일치하지 않습니다.';
     
