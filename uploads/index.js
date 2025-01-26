@@ -33,4 +33,21 @@ const imgUpload = (req, res, next) => {
     });
 };
 
-module.exports = imgUpload;
+function imgUrl(hostName, data){
+    // return data.map(data2 => 
+    //     Object.fromEntries(
+    //         Object.entries(data2).map(([key, value]) => 
+    //             [key, key === 'image' ? `http://${hostName}8801${value}` : value]
+    //             )
+    //         )
+    //     )
+
+    return data.map((item) =>
+        Object.entries(item).reduce((acc, [key, value]) => {
+            acc[key] = key === "image" && value ? `http://${hostName}:8001${value}` : value;
+            return acc;
+        }, {})
+    );
+}
+
+module.exports = { imgUpload, imgUrl };

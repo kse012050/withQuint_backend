@@ -5,10 +5,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const session = require('express-session');
 const path = require('path');
-const fs = require('fs');
-const multer = require('multer');
 const cookieParser = require('cookie-parser');
-const imgUpload = require('./uploads');
 
 const app = express();
 
