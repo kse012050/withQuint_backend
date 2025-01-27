@@ -8,7 +8,7 @@ exports.required = tryCatch(async(req, res, next) =>{
     const noRequired = required.filter((key)=>!req.body[key])
 
     if(noRequired.length){
-        return res.status(400).json({result: false, error: `${noRequired.join(', ')} 값이 없습니다.`})
+        return res.json({result: false, error: `${noRequired.join(', ')} 값이 없습니다.`})
     }
 
     req.fields = required;
