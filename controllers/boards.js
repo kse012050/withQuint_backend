@@ -1,7 +1,14 @@
 const { tryCatch, dbQuery } = require('../utils');
 
 exports.create = tryCatch(async(req, res, next) => {
-    console.log(req.body);
-    console.log(req.fields);
-    
+    await dbQuery(
+        `
+            INSERT INTO ${req.DBName}
+            (${req.keys.join(',')})
+            VALUES (${req.keys.map(()=>'?').join(',')})
+        `,
+        req.values
+    )
+
+    res.status(200).json({result: true})
 })

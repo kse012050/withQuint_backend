@@ -2,8 +2,8 @@ const { tryCatch, dbQuery } = require('../utils');
 
 exports.required = tryCatch(async(req, res, next) =>{
     const result = await dbQuery(`DESCRIBE ${req.DBName}`);
-    
-    const required = result.filter(data=> data.Key !== 'PRI' && data.Type !== 'datetime' && data.Null === 'NO').map(data=> data.Field)
+
+    const required = result.filter(data=> data.Key !== 'PRI' && !data.Default && data.Null === 'NO').map(data=> data.Field)
     
     const noRequired = required.filter((key)=>!req.body[key])
 
@@ -12,5 +12,20 @@ exports.required = tryCatch(async(req, res, next) =>{
     }
 
     req.fields = required;
+    next();
+})
+
+exports.getFieldsAndValues  = tryCatch(async(req, res, next) => {
+    const keys = []
+    const values = []
+
+    Object.entries(req.body).forEach(([key, value])=>{
+        keys.push(key);
+        values.push(value);
+    })
+
+    req.keys = keys;
+    req.values = values;
+
     next();
 })
