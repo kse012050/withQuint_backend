@@ -12,3 +12,48 @@ exports.create = tryCatch(async(req, res, next) => {
 
     res.status(200).json({result: true})
 })
+
+exports.boards = tryCatch(async(req, res, next) => {
+    const { boardType, page } = req.query;
+    const limit = 2;
+    const fields = ['id', 'created', 'title', `CASE WHEN new = 1 THEN 'y' ELSE 'n' END AS new`]
+
+    if(boardType === 'recommendation'){
+        fields.push('type')
+    }
+
+    const [{ totalCount }] = await dbQuery(
+        `
+            SELECT COUNT(*) AS totalCount
+            FROM ${req.DBName}
+            WHERE boardType = '${boardType}';
+        `
+    )
+    
+    let list = await dbQuery(
+        `
+            SELECT ${fields.join(',')}
+            FROM ${req.DBName}
+            WHERE boardType = 'recommendation'
+            ORDER BY created DESC
+            LIMIT ${limit} OFFSET ${(limit * ((page || 1) - 1))};
+        `
+    )
+
+    list = list.map((data, idx) => ({
+        ...data,
+        numb: totalCount - (page - 1) * limit - idx,
+        created: data.created.toISOString().split('T')[0].replaceAll('-', '.'),
+        new: data.new === 'y'
+    }))
+
+    const info = {
+        totalCount,
+        limit,
+        page: Number(page),
+        totalPage: Math.ceil(totalCount / limit),
+    }
+
+    res.status(200).json({result: true, info, list})
+    
+})

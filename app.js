@@ -65,6 +65,11 @@ app.get('/', (req, res, next)=>{
 app.use((req, res, next)=>{
     let schemaName = req.originalUrl.split('/')[1];
     
+    
+    if(schemaName.includes('?')){
+        schemaName = schemaName.split('?')[0];
+    }
+
     if(schemaName === 'signUp' || schemaName === 'signIn'){
         schemaName = 'users';
     }
