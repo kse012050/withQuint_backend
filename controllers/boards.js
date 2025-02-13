@@ -14,7 +14,7 @@ exports.create = tryCatch(async(req, res, next) => {
 })
 
 exports.boards = tryCatch(async(req, res, next) => {
-    const { boardType, page } = req.query;
+    const { boardType, page = 1, search, type } = req.query;
     const limit = 2;
     const fields = ['id', 'created', 'title', `CASE WHEN new = 1 THEN 'y' ELSE 'n' END AS new`]
 
@@ -22,22 +22,37 @@ exports.boards = tryCatch(async(req, res, next) => {
         fields.push('type')
     }
 
+    let conditions = [`boardType = ?`];
+    let values = [boardType];
+
+    if (search) {
+        conditions.push(`title LIKE ?`);
+        values.push(`%${search}%`);
+    }
+
+    if (type) {
+        conditions.push(`type = ?`);
+        values.push(type);
+    }
+
     const [{ totalCount }] = await dbQuery(
         `
             SELECT COUNT(*) AS totalCount
             FROM ${req.DBName}
-            WHERE boardType = '${boardType}';
-        `
+            WHERE ${conditions.join(' AND ')};
+        `,
+        values
     )
     
     let list = await dbQuery(
         `
             SELECT ${fields.join(',')}
             FROM ${req.DBName}
-            WHERE boardType = 'recommendation'
+            WHERE ${conditions.join(' AND ')}
             ORDER BY created DESC
             LIMIT ${limit} OFFSET ${(limit * ((page || 1) - 1))};
-        `
+        `,
+        values
     )
 
     list = list.map((data, idx) => ({
