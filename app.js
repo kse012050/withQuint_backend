@@ -61,6 +61,7 @@ app.get('/', (req, res, next)=>{
     res.end('test')
 })
 
+
 // 들어온 path 값으로 DB 스키마 이름을 설정
 app.use((req, res, next)=>{
     let schemaName = req.originalUrl.split('/')[1];
@@ -94,7 +95,7 @@ app.use((req, res, next)=>{
 
 // 에러 미들웨어
 app.use((err, req, res, next)=>{
-    // console.error(err);
+    console.error(err);
 
     console.log('에러 미들웨어');
     res.status(500).json({result: false, error: '서버 에러입니다.'})

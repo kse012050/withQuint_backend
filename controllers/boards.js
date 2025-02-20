@@ -1,3 +1,4 @@
+const { imgUpload } = require('../uploads');
 const { tryCatch, dbQuery } = require('../utils');
 
 exports.create = tryCatch(async(req, res, next) => {
@@ -10,15 +11,20 @@ exports.create = tryCatch(async(req, res, next) => {
         req.values
     )
 
+    // 이미지가 있는 경우 - 이미지 파일 저장
+    if(req.file){
+        imgUpload(req, res, next)
+    }
+    
     res.status(200).json({result: true})
 })
 
 exports.boards = tryCatch(async(req, res, next) => {
     const { boardType, page = 1, search, type } = req.query;
-    const limit = 2;
+    const limit = 10;
     const fields = ['id', 'created', 'title', `CASE WHEN new = 1 THEN 'y' ELSE 'n' END AS new`]
 
-    if(boardType === 'recommendation'){
+    if(boardType === 'recommendation' || boardType === 'revenue'){
         fields.push('type')
     }
 
@@ -59,7 +65,7 @@ exports.boards = tryCatch(async(req, res, next) => {
         ...data,
         numb: totalCount - (page - 1) * limit - idx,
         created: data.created.toISOString().split('T')[0].replaceAll('-', '.'),
-        new: data.new === 'y'
+        // new: data.new === 'y'
     }))
 
     const info = {
