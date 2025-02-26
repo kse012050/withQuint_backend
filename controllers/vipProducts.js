@@ -19,7 +19,7 @@ exports.create = tryCatch(async(req, res, next) => {
 });
 
 exports.read = tryCatch(async(req, res, next) => {
-    const list = imgUrl(req.hostname, await dbQuery(`SELECT * FROM vipProducts ORDER BY created DESC`));
+    const list = imgUrl(await dbQuery(`SELECT * FROM vipProducts ORDER BY created DESC`));
 
     res.status(200).json({result: true, list})
 })

@@ -18,7 +18,7 @@ const vipProductsRouter = require('./routes/vipProducts');
 const boardsRouter = require('./routes/boards');
 
 const db = mysql.createConnection({
-    host: 'localhost',
+    host: process.env.HOST,
     user: 'root',
     password: process.env.DB_PASSWORD,
     database: 'withquint'

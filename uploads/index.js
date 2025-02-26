@@ -50,10 +50,10 @@ const imgUpload = (req, res, next) => {
 }
 
 
-function imgUrl(hostName, data){
+function imgUrl(data){
     return data.map((item) =>
         Object.entries(item).reduce((acc, [key, value]) => {
-            acc[key] = key === "image" && value ? `http://${hostName}:8001${value}` : value;
+            acc[key] = key === "image" && value ? `http://${process.env.HOST}:${process.env.PORT}${value}` : value;
             return acc;
         }, {})
     );
