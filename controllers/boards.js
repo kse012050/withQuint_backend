@@ -21,13 +21,15 @@ exports.create = tryCatch(async(req, res, next) => {
 
 exports.read = tryCatch(async(req, res, next) => {
     const { boardType, page = 1, search, type } = req.query;
+    // boardType
+    // recommendation, revenue, stock, vip, clinic, notice
     const limit = 10;
     let fields = ['id', 'created', 'title', `new`/* , `CASE WHEN new = 1 THEN 'y' ELSE 'n' END AS new` */]
     const isTypeField = ['recommendation', 'revenue']
     const isImageField = ['stock', 'revenue']
-    const isSecretField = ['vip', 'clinic', 'notice'];
+    const isSecretField = ['vip', 'clinic'];
     const isBooleanField = ['new', 'secret'];
-    const isAuthorField = ['vip', 'clinic', 'notice'];
+    const isAuthorField = ['vip', 'clinic'];
     let joinConditions = ''
     let conditions = [`boardType = ?`];
     let values = [boardType];
