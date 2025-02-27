@@ -26,6 +26,9 @@ exports.getFieldsAndValues = tryCatch(async(req, res, next) => {
 
     Object.entries(req.body).forEach(([key, value])=>{
         keys.push(key);
+        if(value === 'y' || value === 'n'){
+            value = value === 'y'
+        }
         values.push(value);
     })
 

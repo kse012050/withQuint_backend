@@ -22,19 +22,43 @@ exports.create = tryCatch(async(req, res, next) => {
 exports.read = tryCatch(async(req, res, next) => {
     const { boardType, page = 1, search, type } = req.query;
     const limit = 10;
-    const fields = ['id', 'created', 'title', `CASE WHEN new = 1 THEN 'y' ELSE 'n' END AS new`]
-
-    if(boardType === 'recommendation' || boardType === 'revenue'){
-        fields.push('type')
-    }
-    
-    if(boardType === 'stock'){
-        fields.push('image')
-    }
-
+    let fields = ['id', 'created', 'title', `new`/* , `CASE WHEN new = 1 THEN 'y' ELSE 'n' END AS new` */]
+    const isTypeField = ['recommendation', 'revenue']
+    const isImageField = ['stock', 'revenue']
+    const isSecretField = ['vip', 'clinic', 'notice'];
+    const isBooleanField = ['new', 'secret'];
+    const isAuthorField = ['vip', 'clinic', 'notice'];
+    let joinConditions = ''
     let conditions = [`boardType = ?`];
     let values = [boardType];
 
+
+    // 출력 필드 추가
+    if(isTypeField.includes(boardType)){
+        fields.push('type')
+    }
+    
+    if(isImageField.includes(boardType)){
+        fields.push('image')
+    }
+
+    if(isSecretField.includes(boardType)){
+        fields.push(`secret`)
+    }
+
+
+    // fields 명시, boolean AS 'y' or 'n'
+    fields = fields.map((name) => isBooleanField.includes(name) ? `CASE WHEN ${req.DBName}.${name} = 1 THEN 'y' ELSE 'n' END AS ${name}` : `${req.DBName}.${name}`);
+    
+
+    // 작성자 추가
+    if(isAuthorField.includes(boardType)){
+        fields.push(`users.userId AS author`)
+        joinConditions = 'LEFT JOIN users ON boards.author = users.id'
+    }
+
+
+    // 페이징, 검색
     if (search) {
         conditions.push(`title LIKE ?`);
         values.push(`%${search}%`);
@@ -45,6 +69,7 @@ exports.read = tryCatch(async(req, res, next) => {
         values.push(type);
     }
 
+
     const [{ totalCount }] = await dbQuery(
         `
             SELECT COUNT(*) AS totalCount
@@ -53,23 +78,26 @@ exports.read = tryCatch(async(req, res, next) => {
         `,
         values
     )
+
     
     let list = await dbQuery(
         `
             SELECT ${fields.join(',')}
             FROM ${req.DBName}
+            ${joinConditions}
             WHERE ${conditions.join(' AND ')}
-            ORDER BY created DESC
+            ORDER BY boards.created DESC
             LIMIT ${limit} OFFSET ${(limit * ((page || 1) - 1))};
         `,
         values
     )
-
+    
     list = list.map((data, idx) => ({
         ...data,
         numb: totalCount - (page - 1) * limit - idx,
         created: data.created.toISOString().split('T')[0].replaceAll('-', '.'),
         // new: data.new === 'y'
+        // secret: data.secret === 'y'
     }))
 
     const info = {
