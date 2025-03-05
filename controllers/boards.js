@@ -24,9 +24,9 @@ exports.read = tryCatch(async(req, res, next) => {
     // boardType
     // recommendation, revenue, stock, vip, clinic, notice
     const limit = 10;
-    let fields = ['id', 'created', 'title', `new`/* , `CASE WHEN new = 1 THEN 'y' ELSE 'n' END AS new` */]
+    let fields = ['id', 'title', `new`, 'created'/* , `CASE WHEN new = 1 THEN 'y' ELSE 'n' END AS new` */]
     const isTypeField = ['recommendation', 'revenue']
-    const isImageField = ['stock', 'revenue']
+    const isImageField = ['stock']
     const isSecretField = ['vip', 'clinic'];
     const isBooleanField = ['new', 'secret'];
     const isAuthorField = ['vip', 'clinic'];
@@ -118,4 +118,65 @@ exports.read = tryCatch(async(req, res, next) => {
 
     res.status(200).json({result: true, info, list})
     
+})
+
+exports.detail = tryCatch(async(req, res, next) => {
+    const { boardId, boardType } = req.query;
+    let fields = ['id', 'title', 'content', 'content', 'created'];
+    const isBooleanField = ['new', 'secret'];
+    let joinConditions = ''
+    let values = [boardId, boardType]
+
+    console.log(req.DBName);
+
+    // fields 명시, boolean AS 'y' or 'n'
+    fields = fields.map((name) => isBooleanField.includes(name) ? `CASE WHEN ${req.DBName}.${name} = 1 THEN 'y' ELSE 'n' END AS ${name}` : `${req.DBName}.${name}`);
+    
+
+    // 작성자 추가
+    fields.push(`users.userId AS author`)
+    joinConditions = 'LEFT JOIN users ON boards.author = users.id'
+
+
+    const [data] = await dbQuery(
+        `
+            WITH params AS (
+                SELECT ? AS boardId, ? AS boardType
+            )
+            SELECT ${fields.join(',')},
+                (SELECT id FROM boards WHERE id < p.boardId AND boardType = p.boardType ORDER BY id DESC LIMIT 1) AS prev,
+                (SELECT id FROM boards WHERE id > p.boardId AND boardType = p.boardType ORDER BY id ASC LIMIT 1) AS next
+            FROM ${req.DBName}
+            ${joinConditions}
+            , params p  
+            WHERE boards.id = p.boardId AND boards.boardType = p.boardType
+            ORDER BY boards.created DESC
+        `,
+        values
+    )
+
+    // 이전/다음 글 쿼리
+
+    let post;
+    if(data.prev || data.next){
+        post = {}
+        const [prev, next] = await dbQuery(
+            `
+                SELECT 
+                    boards.id, 
+                    boards.title
+                FROM boards AS boards
+                WHERE boards.id IN (?, ?);
+            `,
+            [data.prev, data.next]
+        );
+        post.prev = prev;
+        post.next = next;
+    }
+
+    Object.keys(data).filter((key) => key !== 'prev' || key !== 'next');
+
+    data.created = data.created.toISOString().replace("T", " ").slice(0, 16).replace(/-/g, ".")
+ 
+    res.status(200).json({result: true, data, post})
 })
