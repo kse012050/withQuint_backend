@@ -48,6 +48,7 @@ app.use(
       cookie: {
         httpOnly: true,
         secure: false,
+        maxAge: null
       },
     })
 );

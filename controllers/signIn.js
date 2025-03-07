@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt');
+const jwt = require("jsonwebtoken");
 const { tryCatch, dbQuery } = require('../utils');
 
 exports.signIn = tryCatch(async(req, res, next) => {
@@ -17,12 +18,34 @@ exports.signIn = tryCatch(async(req, res, next) => {
         if(authLogin === 'y'){
             req.session.cookie.maxAge = 7 * 24 * 60 * 60 * 1000;
         }
+        const accessToken = jwt.sign(
+            { id: user.userId },
+            process.env.ACCESS_TOKEN_SECRET,
+        );
+
+        console.log('?', accessToken);
+
+        res.cookie("isLogin", accessToken, { httpOnly: true, sameSite: "Strict" });
+        
     }
 
     res.status(200).json({result, message, session: req.session.user, sessionId: req.sessionID})
 })
 
 exports.auth = tryCatch((req, res) => {
+    // console.log(req.cookies.isLogin);
+    const token = req.cookies.isLogin;
+    // console.log(req.headers);
+    
+    // console.log(accessToken);
+
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        console.log('decoded', decoded);
+        console.log('err', err);
+        
+        req.session.user = decoded && { userId: decoded?.id }
+    })
+    
     const isLogin = !!req.session.user;
     const message = isLogin ? '로그인 상태입니다.' : '로그인 상태가 아닙니다.';
 
