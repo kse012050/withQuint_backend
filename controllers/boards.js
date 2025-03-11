@@ -118,6 +118,9 @@ exports.read = tryCatch(async(req, res, next) => {
     list = imgUrl(list)
 
     res.status(200).json({result: true, info, list})
+})
+
+exports.isIdentity = tryCatch(async(req, res, next) => {
     
 })
 

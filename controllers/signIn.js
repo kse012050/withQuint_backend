@@ -23,9 +23,10 @@ exports.signIn = tryCatch(async(req, res, next) => {
             process.env.ACCESS_TOKEN_SECRET,
         );
 
-        console.log('?', accessToken);
-
-        res.cookie("isLogin", accessToken, { httpOnly: true, sameSite: "Strict" });
+        res.cookie("isLogin", accessToken, { 
+            httpOnly: true, sameSite: "Strict",
+            // secure: true   // https
+         });
         
     }
 
@@ -34,11 +35,13 @@ exports.signIn = tryCatch(async(req, res, next) => {
 
 exports.auth = tryCatch((req, res) => {
     const token = req.cookies.isLogin;
+
+    const base64Payload = token.split(".")[1]; // 두 번째 부분 (Payload)
+    const decodedPayload = JSON.parse(atob(base64Payload)); // Base64 디코딩
+
+    console.log(decodedPayload);
     
     token && jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-        console.log('decoded', decoded);
-        console.log('err', err);
-        
         req.session.user = decoded && { userId: decoded?.id }
     })
     
