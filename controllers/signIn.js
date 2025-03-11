@@ -33,13 +33,9 @@ exports.signIn = tryCatch(async(req, res, next) => {
 })
 
 exports.auth = tryCatch((req, res) => {
-    // console.log(req.cookies.isLogin);
     const token = req.cookies.isLogin;
-    // console.log(req.headers);
     
-    // console.log(accessToken);
-
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    token && jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
         console.log('decoded', decoded);
         console.log('err', err);
         

@@ -46,6 +46,7 @@ exports.read = tryCatch(async(req, res, next) => {
 
     if(isSecretField.includes(boardType)){
         fields.push(`secret`)
+        fields.push(`password`)
     }
 
 
@@ -124,10 +125,10 @@ exports.detail = tryCatch(async(req, res, next) => {
     const { boardId, boardType } = req.query;
     let fields = ['id', 'title', 'content', 'content', 'created'];
     const isBooleanField = ['new', 'secret'];
+    const isPrevNext = ['recommendation', 'revenue', 'stock'];
     let joinConditions = ''
     let values = [boardId, boardType]
 
-    console.log(req.DBName);
 
     // fields 명시, boolean AS 'y' or 'n'
     fields = fields.map((name) => isBooleanField.includes(name) ? `CASE WHEN ${req.DBName}.${name} = 1 THEN 'y' ELSE 'n' END AS ${name}` : `${req.DBName}.${name}`);
@@ -138,6 +139,7 @@ exports.detail = tryCatch(async(req, res, next) => {
     joinConditions = 'LEFT JOIN users ON boards.author = users.id'
 
 
+    console.log('values', values);
     const [data] = await dbQuery(
         `
             WITH params AS (
@@ -156,9 +158,8 @@ exports.detail = tryCatch(async(req, res, next) => {
     )
 
     // 이전/다음 글 쿼리
-
     let post;
-    if(data.prev || data.next){
+    if(isPrevNext.includes(boardType) && data.prev || data.next){
         post = {}
         const [prev, next] = await dbQuery(
             `
