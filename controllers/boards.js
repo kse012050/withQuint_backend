@@ -125,6 +125,13 @@ exports.isIdentity = tryCatch(async(req, res, next) => {
 })
 
 exports.detail = tryCatch(async(req, res, next) => {
+    
+    const token = req.cookies.isLogin;
+
+    const base64Payload = token.split(".")[1]; // 두 번째 부분 (Payload)
+    const decodedPayload = JSON.parse(atob(base64Payload)); // Base64 디코딩
+
+    console.log(decodedPayload);
     const { boardId, boardType } = req.query;
     let fields = ['id', 'title', 'content', 'content', 'created'];
     const isBooleanField = ['new', 'secret'];

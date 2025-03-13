@@ -1,13 +1,16 @@
 
 exports.logout = ( req, res ) => {
     try{
+        console.log('로그아웃');
+        
         if(req.session){
             req.session.destroy((err)=>{
                 if(err){
                     res.status(500).json({result: false, message: '서버 오류.'})
                     throw err;
                 }
-                res.clearCookie("isLogin");
+                res.clearCookie("accessToken");
+                res.clearCookie("refreshToken");
                 res.status(200).json({ result: true, message: '로그아웃되었습니다.' });
             })
         } else {
