@@ -63,7 +63,7 @@ exports.auth = tryCatch(async(req, res, next) => {
             if (err){
                 jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
                     if (err){
-                        console.log(err);
+                        // console.log(err);
                         accessToken = ''
                         refreshToken = ''
                     };

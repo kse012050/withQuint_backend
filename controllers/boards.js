@@ -28,8 +28,8 @@ exports.read = tryCatch(async(req, res, next) => {
     const isTypeField = ['recommendation', 'revenue']
     const isImageField = ['stock']
     const isSecretField = ['vip', 'clinic'];
-    const isBooleanField = ['new', 'secret'];
     const isAuthorField = ['vip', 'clinic'];
+    const isBooleanField = ['new', 'secret'];
     let joinConditions = ''
     let conditions = [`boardType = ?`];
     let values = [boardType];
@@ -46,7 +46,6 @@ exports.read = tryCatch(async(req, res, next) => {
 
     if(isSecretField.includes(boardType)){
         fields.push(`secret`)
-        fields.push(`password`)
     }
 
 
@@ -126,18 +125,19 @@ exports.isIdentity = tryCatch(async(req, res, next) => {
 
 exports.detail = tryCatch(async(req, res, next) => {
     
-    const token = req.cookies.isLogin;
-
-    const base64Payload = token.split(".")[1]; // 두 번째 부분 (Payload)
-    const decodedPayload = JSON.parse(atob(base64Payload)); // Base64 디코딩
-
-    console.log(decodedPayload);
+ 
     const { boardId, boardType } = req.query;
     let fields = ['id', 'title', 'content', 'content', 'created'];
-    const isBooleanField = ['new', 'secret'];
     const isPrevNext = ['recommendation', 'revenue', 'stock'];
+    const isSecretField = ['vip', 'clinic'];
+    const isBooleanField = ['new', 'secret'];
     let joinConditions = ''
     let values = [boardId, boardType]
+
+
+    if(isSecretField.includes(boardType)){
+        fields.push(`secret`)
+    }
 
 
     // fields 명시, boolean AS 'y' or 'n'
@@ -148,8 +148,7 @@ exports.detail = tryCatch(async(req, res, next) => {
     fields.push(`users.userId AS author`)
     joinConditions = 'LEFT JOIN users ON boards.author = users.id'
 
-
-    console.log('values', values);
+    let sendData = {}
     const [data] = await dbQuery(
         `
             WITH params AS (
@@ -167,10 +166,11 @@ exports.detail = tryCatch(async(req, res, next) => {
         values
     )
 
+    sendData = data ? { data: { ...data } } : { isData: null };
+
     // 이전/다음 글 쿼리
-    let post;
     if(isPrevNext.includes(boardType) && data.prev || data.next){
-        post = {}
+        let post = {}
         const [prev, next] = await dbQuery(
             `
                 SELECT 
@@ -183,11 +183,19 @@ exports.detail = tryCatch(async(req, res, next) => {
         );
         post.prev = prev;
         post.next = next;
+        sendData = {...sendData, post}
+    }
+
+    
+    if(isSecretField.includes(boardType) && data.secret === 'y'){
+        const token = req.cookies.accessToken;
+        const isSecretUser = token ? data.author === JSON.parse(atob(token.split(".")[1])).userId : false;
+        sendData = { ...sendData, isSecretUser };
     }
 
     Object.keys(data).filter((key) => key !== 'prev' || key !== 'next');
 
     data.created = data.created.toISOString().replace("T", " ").slice(0, 16).replace(/-/g, ".")
  
-    res.status(200).json({result: true, data, post})
+    res.status(200).json({result: true, ...sendData})
 })
