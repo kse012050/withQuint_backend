@@ -3,7 +3,7 @@ exports.logout = ( req, res ) => {
     try{
         console.log('로그아웃');
         
-        if(req.session){
+        if(req.session.user){
             req.session.destroy((err)=>{
                 if(err){
                     res.status(500).json({result: false, message: '서버 오류.'})

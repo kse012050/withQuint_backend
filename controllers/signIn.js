@@ -4,8 +4,8 @@ const { tryCatch, dbQuery } = require('../utils');
 
 function tokenFuc(user, name){
     const time = {
-        // access: '10s',
-        access: '1d',
+        access: '10s',
+        // access: '1d',
         refresh: '1d'
     }
     
@@ -45,7 +45,6 @@ exports.signIn = tryCatch(async(req, res, next) => {
     if(result){
         tokenFuc(user, 'access')(res)
         tokenFuc(user, 'refresh')(res)
-        
         req.session.user = tokenSaveData(user)
     }
 
@@ -59,32 +58,27 @@ exports.auth = tryCatch(async(req, res, next) => {
     let accessToken = req.cookies.accessToken;
     const refreshToken = req.cookies.refreshToken;
     
-    if(!user){
-        // refreshToken && jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
-        //     if (err){
-        //         console.log('에러');
-        //         res.clearCookie("accessToken");
-        //         accessToken = ''
-        //     };
-            
-        //     if(decoded){
-        //         console.log('실행');
-        //         console.log(decoded);
-        //         tokenFuc(decoded, 'access')(res)
-        //         accessToken = req.cookies.accessToken;
-        //         auth(req, res, next)
-        //     }
-        // });
-        
-
-        accessToken && await jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if(!user && refreshToken){
+        jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+            if (err){
+                jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
+                    if (err){
+                        console.log(err);
+                        accessToken = ''
+                        refreshToken = ''
+                    };
+                    
+                    if(decoded){
+                        tokenFuc(decoded, 'access')(res)
+                        req.session.user = tokenSaveData(decoded)
+                    }
+                })
+            }
             if(decoded){
                 req.session.user = tokenSaveData(decoded)
             }
         })
     }
-    console.log(req.session.user);
-    
     
     const isLogin = !!req.session.user;
     const message = isLogin ? '로그인 상태입니다.' : '로그인 상태가 아닙니다.';
