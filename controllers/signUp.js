@@ -20,8 +20,6 @@ exports.signUp = tryCatch(async(req, res) => {
 
 exports.check = tryCatch(async(req, res) => {
     const { type, value } = req.body;
-    console.log(req.DBName, 111);
-    
     
     if(!type || !value) {
         const errValues = ['type', 'value'].filter((key) => !req.body[key]);

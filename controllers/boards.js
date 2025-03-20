@@ -167,9 +167,9 @@ exports.detail = tryCatch(async(req, res, next) => {
     )
 
     sendData = data ? { data: { ...data } } : { isData: null };
-
+    
     // 이전/다음 글 쿼리
-    if(isPrevNext.includes(boardType) && data.prev || data.next){
+    if(isPrevNext.includes(boardType) && (data.prev || data.next)){
         let post = {}
         const [prev, next] = await dbQuery(
             `
@@ -196,6 +196,7 @@ exports.detail = tryCatch(async(req, res, next) => {
     Object.keys(data).filter((key) => key !== 'prev' || key !== 'next');
 
     data.created = data.created.toISOString().replace("T", " ").slice(0, 16).replace(/-/g, ".")
- 
+    // console.log(sendData);
+    
     res.status(200).json({result: true, ...sendData})
 })
