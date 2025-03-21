@@ -1,6 +1,53 @@
 const { imgUpload, imgUrl } = require('../uploads');
 const { tryCatch, dbQuery } = require('../utils');
 
+exports.main = tryCatch(async(req, res, next) => {
+
+    let [ { data } ] = await dbQuery(
+        `
+            SELECT JSON_OBJECTAGG(
+                boardType,
+                json_data
+            ) AS data
+            FROM (
+                SELECT boardType,
+                    JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'id', id,
+                            'title', title,
+                            'created', created,
+                            'image',  CASE 
+                                        WHEN boardType = 'stock' AND image IS NOT NULL THEN 
+                                            CONCAT('http://localhost:8001', image) 
+                                        ELSE NULL
+                                    END
+                        )
+                    ) AS json_data
+                FROM (
+                    SELECT id, boardType, title, 
+                        DATE_FORMAT(created, '%Y.%m.%d') AS created,
+                        image
+                    FROM (
+                        SELECT *,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY boardType 
+                                ORDER BY created DESC
+                            ) AS row_num
+                        FROM boards
+                        WHERE boardType IN ('recommendation', 'revenue', 'stock', 'vip', 'clinic', 'notice')
+                    ) AS ranked
+                    WHERE 
+                        (boardType = 'stock' AND row_num <= 2)  
+                        OR (boardType != 'stock' AND row_num <= 5)
+                ) AS filtered
+                GROUP BY boardType
+            ) AS grouped;
+        `
+    )
+    
+    res.status(200).json({result: true, data})
+})
+
 exports.create = tryCatch(async(req, res, next) => {
     await dbQuery(
         `
@@ -114,14 +161,11 @@ exports.read = tryCatch(async(req, res, next) => {
     //     list = imgUrl(list)
     // }
 
-    list = imgUrl(list)
+    list = imgUrl(list) 
 
     res.status(200).json({result: true, info, list})
 })
 
-exports.isIdentity = tryCatch(async(req, res, next) => {
-    
-})
 
 exports.detail = tryCatch(async(req, res, next) => {
     
