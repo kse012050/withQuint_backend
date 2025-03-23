@@ -2,7 +2,8 @@ const { imgUpload, imgUrl } = require('../uploads');
 const { tryCatch, dbQuery } = require('../utils');
 
 exports.main = tryCatch(async(req, res, next) => {
-
+    console.log(process.env.HOST);
+    
     let [ { data } ] = await dbQuery(
         `
             SELECT JSON_OBJECTAGG(
@@ -11,22 +12,24 @@ exports.main = tryCatch(async(req, res, next) => {
             ) AS data
             FROM (
                 SELECT boardType,
-                    JSON_ARRAYAGG(
-                        JSON_OBJECT(
-                            'id', id,
-                            'title', title,
-                            'created', created,
-                            'image',  CASE 
-                                        WHEN boardType = 'stock' AND image IS NOT NULL THEN 
-                                            CONCAT('http://localhost:8001', image) 
-                                        ELSE NULL
-                                    END
-                        )
-                    ) AS json_data
+                JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'id', id,
+                        'title', title,
+                        'created', created,
+                        'image', CASE 
+                                    WHEN boardType = 'stock' AND image IS NOT NULL THEN 
+                                        CONCAT('http://${process.env.HOST}:${process.env.PORT}', image) 
+                                    ELSE NULL
+                                END,
+                        'author', author
+                    )
+                ) AS json_data
                 FROM (
                     SELECT id, boardType, title, 
                         DATE_FORMAT(created, '%Y.%m.%d') AS created,
-                        image
+                        image,
+                        author
                     FROM (
                         SELECT *,
                             ROW_NUMBER() OVER (
