@@ -2,8 +2,6 @@ const { imgUpload, imgUrl } = require('../uploads');
 const { tryCatch, dbQuery } = require('../utils');
 
 exports.main = tryCatch(async(req, res, next) => {
-    console.log(process.env.HOST);
-    
     let [ { data } ] = await dbQuery(
         `
             SELECT JSON_OBJECTAGG(
@@ -12,36 +10,46 @@ exports.main = tryCatch(async(req, res, next) => {
             ) AS data
             FROM (
                 SELECT boardType,
-                JSON_ARRAYAGG(
-                    JSON_OBJECT(
-                        'id', id,
-                        'title', title,
-                        'created', created,
-                        'image', CASE 
-                                    WHEN boardType = 'stock' AND image IS NOT NULL THEN 
-                                        CONCAT('http://${process.env.HOST}:${process.env.PORT}', image) 
-                                    ELSE NULL
-                                END,
-                        'author', author
-                    )
-                ) AS json_data
+                    JSON_ARRAYAGG(
+                        JSON_MERGE_PATCH(
+                            JSON_OBJECT(
+                                'id', id,
+                                'title', title,
+                                'created', created,
+                                'author', userId
+                            ),
+                            CASE 
+                                WHEN boardType = 'stock' AND image IS NOT NULL THEN 
+                                    JSON_OBJECT('image', CONCAT('http://${process.env.HOST}:${process.env.PORT}', image))
+                                ELSE 
+                                    JSON_OBJECT()  
+                            END,
+                            CASE 
+                                WHEN boardType IN ('vip', 'clinic') THEN JSON_OBJECT('secret', CASE 
+                                                                                                    WHEN secret = 1 THEN 'y' 
+                                                                                                    WHEN secret = 0 THEN 'n' 
+                                                                                                    ELSE NULL 
+                                                                                                END) 
+                                ELSE JSON_OBJECT()
+                            END
+                        )
+                    ) AS json_data
                 FROM (
-                    SELECT id, boardType, title, 
-                        DATE_FORMAT(created, '%Y.%m.%d') AS created,
-                        image,
-                        author
+                    SELECT b.id, b.boardType, b.title, 
+                        DATE_FORMAT(b.created, '%Y.%m.%d') AS created,
+                        b.image, u.userId, b.secret
                     FROM (
-                        SELECT *,
-                            ROW_NUMBER() OVER (
-                                PARTITION BY boardType 
-                                ORDER BY created DESC
-                            ) AS row_num
+                        SELECT *, ROW_NUMBER() OVER (
+                                    PARTITION BY boardType 
+                                    ORDER BY created DESC
+                                ) AS row_num
                         FROM boards
                         WHERE boardType IN ('recommendation', 'revenue', 'stock', 'vip', 'clinic', 'notice')
-                    ) AS ranked
+                    ) AS b
+                    LEFT JOIN users u ON b.author = u.id
                     WHERE 
-                        (boardType = 'stock' AND row_num <= 2)  
-                        OR (boardType != 'stock' AND row_num <= 5)
+                        (b.boardType = 'stock' AND row_num <= 2)  
+                        OR (b.boardType != 'stock' AND row_num <= 5)
                 ) AS filtered
                 GROUP BY boardType
             ) AS grouped;
