@@ -11,11 +11,15 @@ exports.required = tryCatch(async(req, res, next) =>{
     }
     
     const noRequired = required.filter((key)=>!req.body[key])
+
+    console.log(required);
+    console.log(noRequired);
     
     if(noRequired.length){
         return res.json({result: false, error: `${noRequired.join(', ')} 값이 없습니다.`})
     }
-
+    
+    
     req.fields = required;
     next();
 })

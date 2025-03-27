@@ -242,10 +242,12 @@ exports.detail = tryCatch(async(req, res, next) => {
     }
 
     
-    if(isSecretField.includes(boardType) && data.secret === 'y'){
+    if(isSecretField.includes(boardType)){
         const token = req.cookies.accessToken;
-        const isSecretUser = token ? data.author === JSON.parse(atob(token.split(".")[1])).userId : false;
-        sendData = { ...sendData, isSecretUser };
+        const isUpdateUser = token && data.author === JSON.parse(atob(token.split(".")[1])).userId
+        const isSecretUser = isUpdateUser || data.secret === 'n';
+        sendData = { ...sendData, isUpdateUser, isSecretUser };
+        
     }
 
     Object.keys(data).filter((key) => key !== 'prev' || key !== 'next');
