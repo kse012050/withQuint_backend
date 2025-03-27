@@ -48,9 +48,7 @@ exports.signIn = tryCatch(async(req, res, next) => {
         req.session.user = tokenSaveData(user)
     }
 
-    const isLogin = !!req.session.user
-
-    res.status(200).json({result, isLogin, message, user: req.session.user})
+    res.status(200).json({result, message, user: req.session.user})
 })
 
 exports.auth = tryCatch(async(req, res, next) => {
@@ -80,9 +78,8 @@ exports.auth = tryCatch(async(req, res, next) => {
         })
     }
     
-    const isLogin = !!req.session.user;
-    const message = isLogin ? '로그인 상태입니다.' : '로그인 상태가 아닙니다.';
+    const message = req.session.user ? '로그인 상태입니다.' : '로그인 상태가 아닙니다.';
 
-    res.status(200).json({result: true, isLogin, message, user: req.session.user})
+    res.status(200).json({result: true, message, user: req.session.user})
 })
 

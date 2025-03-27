@@ -110,7 +110,7 @@ exports.read = tryCatch(async(req, res, next) => {
     // fields 명시, boolean AS 'y' or 'n'
     fields = fields.map((name) => isBooleanField.includes(name) ? `CASE WHEN ${req.DBName}.${name} = 1 THEN 'y' ELSE 'n' END AS ${name}` : `${req.DBName}.${name}`);
     
-
+    
     // 작성자 추가
     if(isAuthorField.includes(boardType)){
         fields.push(`users.userId AS author`)
