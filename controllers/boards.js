@@ -219,6 +219,11 @@ exports.detail = tryCatch(async(req, res, next) => {
         values
     )
 
+    if(!data){
+        console.log(data);
+        return res.status(200).json({result: false})
+    }
+
     sendData = data ? { data: { ...data } } : { isData: null };
     
     // 이전/다음 글 쿼리
@@ -240,7 +245,7 @@ exports.detail = tryCatch(async(req, res, next) => {
     }
 
     
-    if(isSecretField.includes(boardType)){
+    if(isSecretField.includes(boardType) && data){
         const token = req.cookies.accessToken;
         const isUpdateUser = token && data.author === JSON.parse(atob(token.split(".")[1])).userId
         const isSecretUser = isUpdateUser || data.secret === 'n';
@@ -269,5 +274,11 @@ exports.update = tryCatch(async(req, res, next) => {
         [...req.values]
     );
     
+    res.status(200).json({result: true})
+})
+
+exports.remove = tryCatch(async(req, res, next) => {
+    await dbQuery(`DELETE FROM boards WHERE id = ?`, req.values);
+
     res.status(200).json({result: true})
 })
