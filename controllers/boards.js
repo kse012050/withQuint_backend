@@ -179,8 +179,6 @@ exports.read = tryCatch(async(req, res, next) => {
 
 
 exports.detail = tryCatch(async(req, res, next) => {
-    
- 
     const { boardId, boardType } = req.query;
     let fields = ['id', 'title', 'content', 'content', 'created'];
     const isPrevNext = ['recommendation', 'revenue', 'stock'];
@@ -247,7 +245,6 @@ exports.detail = tryCatch(async(req, res, next) => {
         const isUpdateUser = token && data.author === JSON.parse(atob(token.split(".")[1])).userId
         const isSecretUser = isUpdateUser || data.secret === 'n';
         sendData = { ...sendData, isUpdateUser, isSecretUser };
-        
     }
 
     Object.keys(data).filter((key) => key !== 'prev' || key !== 'next');
@@ -256,4 +253,21 @@ exports.detail = tryCatch(async(req, res, next) => {
     // console.log(sendData);
     
     res.status(200).json({result: true, ...sendData})
+})
+
+exports.update = tryCatch(async(req, res, next) => {
+    console.log(req.keys);
+    console.log(req.values);
+    console.log(req.DBName);
+    
+    await dbQuery(
+        `
+            UPDATE ${req.DBName}
+            SET ${req.keys.map(key => `${key} = ?`).join(', ')}
+            WHERE id = ?
+        `,
+        [...req.values]
+    );
+    
+    res.status(200).json({result: true})
 })

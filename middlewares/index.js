@@ -12,9 +12,6 @@ exports.required = tryCatch(async(req, res, next) =>{
     
     const noRequired = required.filter((key)=>!req.body[key])
 
-    console.log(required);
-    console.log(noRequired);
-    
     if(noRequired.length){
         return res.json({result: false, error: `${noRequired.join(', ')} 값이 없습니다.`})
     }
@@ -29,7 +26,9 @@ exports.getFieldsAndValues = tryCatch(async(req, res, next) => {
     const values = []
 
     Object.entries(req.body).forEach(([key, value])=>{
-        keys.push(key);
+        if(key !== 'boardId'){
+            keys.push(key);
+        }
         if(value === 'y' || value === 'n'){
             value = value === 'y'
         }
