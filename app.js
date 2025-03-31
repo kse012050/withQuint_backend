@@ -16,6 +16,7 @@ const signInRouter = require('./routes/signIn');
 const signUpRouter = require('./routes/signUp');
 const vipProductsRouter = require('./routes/vipProducts');
 const boardsRouter = require('./routes/boards');
+const adminRouter = require('./routes/admin');
 
 const db = mysql.createConnection({
     host: process.env.HOST,
@@ -65,7 +66,10 @@ app.get('/', (req, res, next)=>{
 
 // 들어온 path 값으로 DB 스키마 이름을 설정
 app.use((req, res, next)=>{
-    let schemaName = req.originalUrl.split('/')[1];
+    const { userId } = req.body;
+    const isAdmin = !userId;
+    
+    let schemaName = req.originalUrl.split('/').at(-1);
     
     
     if(schemaName.includes('?')){
@@ -73,11 +77,13 @@ app.use((req, res, next)=>{
     }
 
     if(schemaName === 'signUp' || schemaName === 'signIn'){
-        schemaName = 'users';
+        schemaName = isAdmin ? 'admin' : 'users';
     }
 
     req.DBName = schemaName;
+    isAdmin && (req.isAdmin = isAdmin);
     
+
     next();
 })
 
@@ -86,6 +92,7 @@ app.use('/signIn', signInRouter);
 app.use('/signUp', signUpRouter);
 app.use('/vipProducts', vipProductsRouter);
 app.use('/boards', boardsRouter);
+app.use('/admin', adminRouter);
 
 // 404 에러 미들웨어
 app.use((req, res, next)=>{

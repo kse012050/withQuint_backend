@@ -32,31 +32,48 @@ function tokenSaveData(user){
 }
 
 exports.signIn = tryCatch(async(req, res, next) => {
-    let { userId, password, authLogin } = req.body;
+    let { userId, adminId, password } = req.body;
+    const outputFields = ['id', 'password'];
+    let id;
+    let idName;
+    if(!req.isAdmin){
+        idName = 'userId';
+        id = userId;
+    }else{
+        idName = 'adminId'
+        id = adminId;
+        outputFields.push('isSuper')
+    }
+    outputFields.push(idName);
     
     // 유저 아이디 확인
-    const [ user ] = await dbQuery(`SELECT id, userId, password FROM ${req.DBName} WHERE userId = ?`, userId);
+    const [ user ] = await dbQuery(`SELECT ${outputFields.join(',')} FROM ${req.DBName} WHERE ${idName} = ?`, id);
 
     // 유저 비밀번호 확인
     const result = await bcrypt.compare(password, user.password);
 
     const message = result ? '로그인 성공' : '비밀번호가 일치하지 않습니다.';
     
+    
     if(result){
         tokenFuc(user, 'access')(res)
         tokenFuc(user, 'refresh')(res)
-        req.session.user = tokenSaveData(user)
+        req.session[idName.slice(0, -2)] = tokenSaveData(user)
+        console.log(idName.slice(0, -2));
+        
     }
+    console.log(req.session.admin);
 
     res.status(200).json({result, message, user: req.session.user})
 })
 
 exports.auth = tryCatch(async(req, res, next) => {
     const user = req.session.user;
+    const admin = req.session.admin;
     let accessToken = req.cookies.accessToken;
     const refreshToken = req.cookies.refreshToken;
     
-    if(!user && refreshToken){
+    if(!user && !admin && refreshToken){
         jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
             if (err){
                 jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
