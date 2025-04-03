@@ -2,53 +2,62 @@ const bcrypt = require('bcrypt');
 const jwt = require("jsonwebtoken");
 const { tryCatch, dbQuery } = require('../utils');
 
-function tokenFuc(user, name){
-    const time = {
+function tokenFuc(info, name){
+    const types = ['access', 'refresh']
+    const times = {
         access: '10s',
         // access: '1d',
         refresh: '1d'
     }
+
+    const options = {  
+        httpOnly: true, 
+        sameSite: "Strict",
+        // secure: true   // https
+    }
     
     return (res) => {
-        res.cookie(
-            `${name}Token`,
-            jwt.sign(
-                tokenSaveData(user),
-                process.env[`${name.toUpperCase()}_TOKEN_SECRET`],
-                { expiresIn: time[name] }
-            ), 
-            { 
-                httpOnly: true, 
-                sameSite: "Strict",
-                // secure: true   // https
-             }
-        );
+        types.forEach((type) => {
+            res.cookie(
+                `${name}${type}Token`,
+                jwt.sign(
+                    tokenSaveData(info),
+                    process.env[`${type.toUpperCase()}_TOKEN_SECRET`],
+                    { expiresIn: times[type] }
+                ), 
+                options
+            );
+        })
     }
 }
 
 
-function tokenSaveData(user){
-    return { id: user.id, userId: user.userId };
+function tokenSaveData(user, name){
+    const obj = {
+        'user': {
+            userId: user.userId
+        },
+        'admin': {
+            isSuper: !!user.isSuper
+        }
+    }
+    return { id: user.id, ...obj[name] };
 }
 
 exports.signIn = tryCatch(async(req, res, next) => {
-    let { userId, adminId, password } = req.body;
-    const outputFields = ['id', 'password'];
-    let id;
-    let idName;
-    if(!req.isAdmin){
-        idName = 'userId';
-        id = userId;
-    }else{
-        idName = 'adminId'
-        id = adminId;
+    let { password } = req.body;
+    const name = !req.isAdmin ? 'user' : 'admin';
+    let idName = `${name}Id`;
+    let id = req.body[`${idName}`];
+    const outputFields = ['id', 'password', idName];
+    if(req.isAdmin){
         outputFields.push('isSuper')
     }
-    outputFields.push(idName);
     
     // 유저 아이디 확인
     const [ user ] = await dbQuery(`SELECT ${outputFields.join(',')} FROM ${req.DBName} WHERE ${idName} = ?`, id);
-
+    console.log(user);
+    
     // 유저 비밀번호 확인
     const result = await bcrypt.compare(password, user.password);
 
@@ -56,47 +65,49 @@ exports.signIn = tryCatch(async(req, res, next) => {
     
     
     if(result){
-        tokenFuc(user, 'access')(res)
-        tokenFuc(user, 'refresh')(res)
-        req.session[idName.slice(0, -2)] = tokenSaveData(user)
-        console.log(idName.slice(0, -2));
-        
+        tokenFuc(user, name)(res)
+        req.session[name] = tokenSaveData(user, name)
     }
-    console.log(req.session.admin);
+    console.log(req.session.user);
 
     res.status(200).json({result, message, user: req.session.user})
 })
 
-exports.auth = tryCatch(async(req, res, next) => {
-    const user = req.session.user;
-    const admin = req.session.admin;
-    let accessToken = req.cookies.accessToken;
-    const refreshToken = req.cookies.refreshToken;
-    
-    if(!user && !admin && refreshToken){
-        jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-            if (err){
-                jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
-                    if (err){
-                        // console.log(err);
-                        accessToken = ''
-                        refreshToken = ''
-                    };
-                    
-                    if(decoded){
-                        tokenFuc(decoded, 'access')(res)
-                        req.session.user = tokenSaveData(decoded)
-                    }
-                })
-            }
-            if(decoded){
-                req.session.user = tokenSaveData(decoded)
-            }
-        })
-    }
-    
-    const message = req.session.user ? '로그인 상태입니다.' : '로그인 상태가 아닙니다.';
+const jwtVerifyAsync = (token, secret) =>
+    new Promise((resolve) => {
+        jwt.verify(token, secret, (err, decoded) => {
+            resolve(decoded || null);
+        });
+});
 
-    res.status(200).json({result: true, message, user: req.session.user})
+exports.auth = tryCatch(async(req, res, next) => {
+    const name = !req.isAdmin ? 'user' : 'admin';
+    const info = req.session[name];
+    let accessToken = req.cookies[`${name}accessToken`];
+    const refreshToken = req.cookies[`${name}refreshToken`];
+    
+    if (!info && refreshToken) {
+        const accessDecoded = await jwtVerifyAsync(accessToken, process.env.ACCESS_TOKEN_SECRET);
+      
+        if (accessDecoded) {
+            req.session[name] = tokenSaveData(accessDecoded);
+        } else {
+            const refreshDecoded = await jwtVerifyAsync(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        
+            if (refreshDecoded) {
+                tokenFuc(refreshDecoded, name)(res);
+                req.session[name] = tokenSaveData(refreshDecoded);
+            } else {
+                accessToken = '';
+                refreshToken = '';
+            }
+        }
+    }
+
+    
+    const isLogin = !!req.session[name]
+    const message = isLogin ? '로그인 상태입니다.' : '로그인 상태가 아닙니다.';
+
+    res.status(200).json({result: true, message, isLogin, user: req.session.user})
 })
 

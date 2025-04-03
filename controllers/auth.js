@@ -1,5 +1,6 @@
 
 exports.logout = ( req, res ) => {
+    const name = !req.isAdmin ? 'user' : 'admin';
     try{
         console.log('로그아웃');
         
@@ -9,8 +10,8 @@ exports.logout = ( req, res ) => {
                     res.status(500).json({result: false, message: '서버 오류.'})
                     throw err;
                 }
-                res.clearCookie("accessToken");
-                res.clearCookie("refreshToken");
+                res.clearCookie(`${name}accessToken`);
+                res.clearCookie(`${name}refreshToken`);
                 res.status(200).json({ result: true, message: '로그아웃되었습니다.' });
             })
         } else {

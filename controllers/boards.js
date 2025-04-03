@@ -180,6 +180,7 @@ exports.read = tryCatch(async(req, res, next) => {
 
 exports.detail = tryCatch(async(req, res, next) => {
     const { boardId, boardType } = req.query;
+    console.log(req.DBName);
     let fields = ['id', 'title', 'content', 'content', 'created'];
     const isPrevNext = ['recommendation', 'revenue', 'stock'];
     const isSecretField = ['vip', 'clinic'];

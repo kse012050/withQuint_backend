@@ -49,11 +49,10 @@ app.use(
       cookie: {
         httpOnly: true,
         secure: false,
-        maxAge: null
+        maxAge: null,
       },
     })
 );
-
 
 app.get('/', (req, res, next)=>{
     console.log(req);
@@ -66,11 +65,12 @@ app.get('/', (req, res, next)=>{
 
 // 들어온 path 값으로 DB 스키마 이름을 설정
 app.use((req, res, next)=>{
-    const { userId } = req.body;
-    const isAdmin = !userId;
+    const isAdmin = new URL(req.get('Referer')).pathname.includes('admin');
     
-    let schemaName = req.originalUrl.split('/').at(-1);
-    
+    // 이건 뭐였지?
+    // let schemaName = req.originalUrl.split('/').at(-1);
+    // 게시물
+    let schemaName = req.originalUrl.split('/')[1];
     
     if(schemaName.includes('?')){
         schemaName = schemaName.split('?')[0];
@@ -85,6 +85,23 @@ app.use((req, res, next)=>{
     
 
     next();
+
+    
+    // let schemaName = req.originalUrl.split('/')[1];
+    
+    
+    // if(schemaName.includes('?')){
+    //     schemaName = schemaName.split('?')[0];
+    // }
+
+    // if(schemaName === 'signUp' || schemaName === 'signIn'){
+    //     schemaName = 'users';
+    // }
+    // console.log(schemaName);
+    
+    // req.DBName = schemaName;
+    
+    // next();
 })
 
 app.use('/', authRouter);

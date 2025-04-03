@@ -11,10 +11,8 @@ const dbQuery = (sql, values) => {
     return new Promise((resolve, reject) => {
         db.query(sql, values, (error, result) => {
             if(error){
-                console.log('??');
-                
-                res.status(200).json({result: false})
                 console.error('MySQL Error:', error);
+                res.status(200).json({result: false})
                 return reject(error);
             }
             resolve(result)
