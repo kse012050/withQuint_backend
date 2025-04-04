@@ -180,7 +180,6 @@ exports.read = tryCatch(async(req, res, next) => {
 
 exports.detail = tryCatch(async(req, res, next) => {
     const { boardId, boardType } = req.query;
-    console.log(req.DBName);
     let fields = ['id', 'title', 'content', 'content', 'created'];
     const isPrevNext = ['recommendation', 'revenue', 'stock'];
     const isSecretField = ['vip', 'clinic'];
@@ -247,7 +246,8 @@ exports.detail = tryCatch(async(req, res, next) => {
 
     
     if(isSecretField.includes(boardType) && data){
-        const token = req.cookies.accessToken;
+        // access 토큰이 만료 되었을 때 ( refesh 토근 있음 ) access 토큰 새로 받아 올 수 있나?
+        const token = req.cookies.useraccessToken;
         const isUpdateUser = token && data.author === JSON.parse(atob(token.split(".")[1])).userId
         const isSecretUser = isUpdateUser || data.secret === 'n';
         sendData = { ...sendData, isUpdateUser, isSecretUser };

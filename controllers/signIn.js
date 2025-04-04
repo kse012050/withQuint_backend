@@ -21,7 +21,7 @@ function tokenFuc(info, name){
             res.cookie(
                 `${name}${type}Token`,
                 jwt.sign(
-                    tokenSaveData(info),
+                    tokenSaveData(info, name),
                     process.env[`${type.toUpperCase()}_TOKEN_SECRET`],
                     { expiresIn: times[type] }
                 ), 
@@ -90,13 +90,13 @@ exports.auth = tryCatch(async(req, res, next) => {
         const accessDecoded = await jwtVerifyAsync(accessToken, process.env.ACCESS_TOKEN_SECRET);
       
         if (accessDecoded) {
-            req.session[name] = tokenSaveData(accessDecoded);
+            req.session[name] = tokenSaveData(accessDecoded, name);
         } else {
             const refreshDecoded = await jwtVerifyAsync(refreshToken, process.env.REFRESH_TOKEN_SECRET);
         
             if (refreshDecoded) {
                 tokenFuc(refreshDecoded, name)(res);
-                req.session[name] = tokenSaveData(refreshDecoded);
+                req.session[name] = tokenSaveData(refreshDecoded, name);
             } else {
                 accessToken = '';
                 refreshToken = '';
