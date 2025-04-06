@@ -71,6 +71,8 @@ app.use((req, res, next)=>{
     // let schemaName = req.originalUrl.split('/').at(-1);
     // 게시물
     let schemaName = req.originalUrl.split('/')[1];
+    console.log(schemaName);
+    // console.log(schemaName2);
     
     if(schemaName.includes('?')){
         schemaName = schemaName.split('?')[0];
@@ -83,9 +85,7 @@ app.use((req, res, next)=>{
     req.DBName = schemaName;
     isAdmin && (req.isAdmin = isAdmin);
     
-
     next();
-
     
     // let schemaName = req.originalUrl.split('/')[1];
     

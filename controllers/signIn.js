@@ -59,18 +59,18 @@ exports.signIn = tryCatch(async(req, res, next) => {
     console.log(user);
     
     // 유저 비밀번호 확인
-    const result = await bcrypt.compare(password, user.password);
+    const state = await bcrypt.compare(password, user.password);
 
-    const message = result ? '로그인 성공' : '비밀번호가 일치하지 않습니다.';
+    const message = state ? '로그인 성공' : '비밀번호가 일치하지 않습니다.';
     
     
-    if(result){
+    if(state){
         tokenFuc(user, name)(res)
         req.session[name] = tokenSaveData(user, name)
     }
-    console.log(req.session.user);
+    console.log(req.session[name]);
 
-    res.status(200).json({result, message, user: req.session.user})
+    res.status(200).json({result: true, state, message, user: req.session.user})
 })
 
 const jwtVerifyAsync = (token, secret) =>
