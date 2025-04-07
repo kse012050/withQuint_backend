@@ -6,6 +6,10 @@ exports.signUp = tryCatch(async(req, res) => {
         Object.entries(req.body).map(async ([key, value]) => key === 'password' ? await bcrypt.hash(value, 12) : value)
     );
 
+    console.log(req.fields);
+    console.log(values);
+    
+
     await dbQuery(
         `
             INSERT INTO ${req.DBName} 
@@ -27,9 +31,6 @@ exports.check = tryCatch(async(req, res) => {
         const errValues = ['type', 'value'].filter((key) => !req.body[key]);
         return res.status(400).json({result: false, error: `${errValues.join(', ')} 값이 없습니다.`});
     }
-
-    console.log(type);
-    
     
 
     const result = await dbQuery(
