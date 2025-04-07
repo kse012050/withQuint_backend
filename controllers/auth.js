@@ -2,16 +2,14 @@
 exports.logout = ( req, res ) => {
     const name = !req.isAdmin ? 'user' : 'admin';
     try{
-        console.log('로그아웃');
-        
         if(req.session.user){
             req.session.destroy((err)=>{
                 if(err){
                     res.status(500).json({result: false, message: '서버 오류.'})
                     throw err;
                 }
-                res.clearCookie(`${name}accessToken`);
-                res.clearCookie(`${name}refreshToken`);
+                res.clearCookie(`${name}AccessToken`);
+                res.clearCookie(`${name}RefreshToken`);
                 res.status(200).json({ result: true, message: '로그아웃되었습니다.' });
             })
         } else {

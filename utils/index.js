@@ -1,5 +1,5 @@
 const db = require("../config/db")
-
+const jwt = require("jsonwebtoken");
 
 const tryCatch = (fn) => {
     return (req, res, next) => {
@@ -20,4 +20,11 @@ const dbQuery = (sql, values) => {
     })
 }
 
-module.exports = { tryCatch, dbQuery };
+const jwtVerifyAsync = (token, secret) =>
+    new Promise((resolve) => {
+        jwt.verify(token, secret, (err, decoded) => {
+            resolve(decoded || null);
+        });
+});
+
+module.exports = { tryCatch, dbQuery, jwtVerifyAsync };

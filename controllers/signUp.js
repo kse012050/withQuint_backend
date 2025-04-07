@@ -6,10 +6,6 @@ exports.signUp = tryCatch(async(req, res) => {
         Object.entries(req.body).map(async ([key, value]) => key === 'password' ? await bcrypt.hash(value, 12) : value)
     );
 
-    console.log(req.fields);
-    console.log(values);
-    
-
     await dbQuery(
         `
             INSERT INTO ${req.DBName} 

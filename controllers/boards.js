@@ -247,7 +247,7 @@ exports.detail = tryCatch(async(req, res, next) => {
     
     if(isSecretField.includes(boardType) && data){
         // access 토큰이 만료 되었을 때 ( refesh 토근 있음 ) access 토큰 새로 받아 올 수 있나?
-        const token = req.cookies.useraccessToken;
+        const token = req.cookies.userAccessToken;
         const isUpdateUser = token && data.author === JSON.parse(atob(token.split(".")[1])).userId
         const isSecretUser = isUpdateUser || data.secret === 'n';
         sendData = { ...sendData, isUpdateUser, isSecretUser };

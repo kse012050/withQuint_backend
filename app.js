@@ -67,12 +67,7 @@ app.get('/', (req, res, next)=>{
 app.use((req, res, next)=>{
     const isAdmin = new URL(req.get('Referer')).pathname.includes('admin');
     
-    // 이건 뭐였지?
-    // let schemaName = req.originalUrl.split('/').at(-1);
-    // 게시물
     let schemaName = req.originalUrl.split('/')[1];
-    // console.log(schemaName);
-    // console.log(schemaName2);
     
     if(schemaName.includes('?')){
         schemaName = schemaName.split('?')[0];
@@ -87,21 +82,6 @@ app.use((req, res, next)=>{
     
     next();
     
-    // let schemaName = req.originalUrl.split('/')[1];
-    
-    
-    // if(schemaName.includes('?')){
-    //     schemaName = schemaName.split('?')[0];
-    // }
-
-    // if(schemaName === 'signUp' || schemaName === 'signIn'){
-    //     schemaName = 'users';
-    // }
-    // console.log(schemaName);
-    
-    // req.DBName = schemaName;
-    
-    // next();
 })
 
 app.use('/', authRouter);

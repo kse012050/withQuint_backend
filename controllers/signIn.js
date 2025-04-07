@@ -1,13 +1,13 @@
 const bcrypt = require('bcrypt');
 const jwt = require("jsonwebtoken");
-const { tryCatch, dbQuery } = require('../utils');
+const { tryCatch, dbQuery, jwtVerifyAsync } = require('../utils');
 
 function tokenFuc(info, name){
-    const types = ['access', 'refresh']
+    const types = ['Access', 'Refresh']
     const times = {
-        access: '10s',
-        // access: '1d',
-        refresh: '1d'
+        // Access: '10s',
+        Access: '1d',
+        Refresh: '1d'
     }
 
     const options = {  
@@ -72,18 +72,18 @@ exports.signIn = tryCatch(async(req, res, next) => {
     res.status(200).json({result: true, state, message, user: req.session.user})
 })
 
-const jwtVerifyAsync = (token, secret) =>
-    new Promise((resolve) => {
-        jwt.verify(token, secret, (err, decoded) => {
-            resolve(decoded || null);
-        });
-});
+// const jwtVerifyAsync = (token, secret) =>
+//     new Promise((resolve) => {
+//         jwt.verify(token, secret, (err, decoded) => {
+//             resolve(decoded || null);
+//         });
+// });
 
 exports.auth = tryCatch(async(req, res, next) => {
     const name = !req.isAdmin ? 'user' : 'admin';
     const info = req.session[name];
-    let accessToken = req.cookies[`${name}accessToken`];
-    const refreshToken = req.cookies[`${name}refreshToken`];
+    let accessToken = req.cookies[`${name}AccessToken`];
+    const refreshToken = req.cookies[`${name}RefreshToken`];
     
     if (!info && refreshToken) {
         const accessDecoded = await jwtVerifyAsync(accessToken, process.env.ACCESS_TOKEN_SECRET);
@@ -97,8 +97,8 @@ exports.auth = tryCatch(async(req, res, next) => {
                 tokenFuc(refreshDecoded, name)(res);
                 req.session[name] = tokenSaveData(refreshDecoded, name);
             } else {
-                accessToken = '';
-                refreshToken = '';
+                req.cookies[`${name}AccessToken`] = '';
+                req.cookies[`${name}RefreshToken`] = '';
             }
         }
     }
@@ -107,6 +107,6 @@ exports.auth = tryCatch(async(req, res, next) => {
     const isLogin = !!req.session[name]
     const message = isLogin ? '로그인 상태입니다.' : '로그인 상태가 아닙니다.';
 
-    res.status(200).json({result: true, message, isLogin, user: req.session.user})
+    res.status(200).json({result: true, message, state: isLogin, isLogin, user: req.session.user})
 })
 
