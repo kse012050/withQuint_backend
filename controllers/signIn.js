@@ -56,7 +56,6 @@ exports.signIn = tryCatch(async(req, res, next) => {
     
     // 유저 아이디 확인
     const [ user ] = await dbQuery(`SELECT ${outputFields.join(',')} FROM ${req.DBName} WHERE ${idName} = ?`, id);
-    console.log(user);
     
     // 유저 비밀번호 확인
     const state = await bcrypt.compare(password, user.password);

@@ -20,11 +20,16 @@ exports.signUp = tryCatch(async(req, res) => {
 
 exports.check = tryCatch(async(req, res) => {
     const { type, value } = req.body;
+    const name = type === 'userId' && '아이디' ||
+                type === 'nickname' && '닉네임'
     
     if(!type || !value) {
         const errValues = ['type', 'value'].filter((key) => !req.body[key]);
         return res.status(400).json({result: false, error: `${errValues.join(', ')} 값이 없습니다.`});
     }
+
+    console.log(type);
+    
     
 
     const result = await dbQuery(
@@ -36,6 +41,8 @@ exports.check = tryCatch(async(req, res) => {
         value
     );
 
-    res.status(200).json({result: !result.length, message: `사용할 수 ${result.length ? '없는' : '있는'} 아이디 입니다` });
+    const state = !result.length
+
+    res.status(200).json({result: true, state: state,  message: `사용할 수 ${state ? '있는' : '없는'} ${name} 입니다` });
     
 })
