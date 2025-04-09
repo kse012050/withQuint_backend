@@ -79,6 +79,9 @@ exports.create = tryCatch(async(req, res, next) => {
 
 exports.read = tryCatch(async(req, res, next) => {
     const { boardType, page = 1, search, type } = req.query;
+    // console.log(boardType);
+    // console.log(req.DBName);
+    
     // boardType
     // recommendation, revenue, stock, vip, clinic, notice
     const limit = 10;
@@ -94,6 +97,11 @@ exports.read = tryCatch(async(req, res, next) => {
 
 
     // 출력 필드 추가
+    if(req.fields){
+        fields.push(...req.fields)
+    }
+    
+
     if(isTypeField.includes(boardType)){
         fields.push('type')
     }
@@ -138,7 +146,6 @@ exports.read = tryCatch(async(req, res, next) => {
         `,
         values
     )
-
     
     let list = await dbQuery(
         `

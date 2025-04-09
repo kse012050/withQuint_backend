@@ -12,10 +12,14 @@ exports.isAdminAuth = tryCatch(async (req, res, next) => {
     next();
 })
 
+exports.adminAddField = tryCatch(async (req, res, next) => {
+    req.fields = ['visible'];
+    next();
+})
+
 exports.logout = tryCatch(async (req, res, next) => {
     res.clearCookie('adminAccessToken');
     res.clearCookie('adminRefreshToken');
-    console.log('?');
     
     return res.status(200).json({ result: true, state: true, message: '로그아웃되었습니다' });
 })
