@@ -85,6 +85,8 @@ exports.read = tryCatch(async(req, res, next) => {
     // boardType
     // recommendation, revenue, stock, vip, clinic, notice
     const limit = 10;
+    // let fields = ['id', 'title', 'new', `DATE_FORMAT(created, '%Y.%m.%d') AS created`];
+    // let fields = ['id', 'title', 'new', `DATE_FORMAT(created, '%Y.%m.%d') AS created`];
     let fields = ['id', 'title', `new`, 'created'/* , `CASE WHEN new = 1 THEN 'y' ELSE 'n' END AS new` */]
     const isTypeField = ['recommendation', 'revenue']
     const isImageField = ['stock']
@@ -117,7 +119,7 @@ exports.read = tryCatch(async(req, res, next) => {
 
     // fields 명시, boolean AS 'y' or 'n'
     fields = fields.map((name) => isBooleanField.includes(name) ? `CASE WHEN ${req.DBName}.${name} = 1 THEN 'y' ELSE 'n' END AS ${name}` : `${req.DBName}.${name}`);
-    
+    fields = fields.map((name) => name === `${req.DBName}.created` ? `DATE_FORMAT(${name}, '%Y.%m.%d') AS created` : `${name}`);
     
     // 작성자 추가
     if(isAuthorField.includes(boardType)){
@@ -162,7 +164,7 @@ exports.read = tryCatch(async(req, res, next) => {
     list = list.map((data, idx) => ({
         ...data,
         numb: totalCount - (page - 1) * limit - idx,
-        created: data.created.toISOString().split('T')[0].replaceAll('-', '.'),
+        // created: data.created.toISOString().split('T')[0].replaceAll('-', '.'),
         // new: data.new === 'y'
         // secret: data.secret === 'y'
     }))
