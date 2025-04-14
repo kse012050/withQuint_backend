@@ -67,7 +67,6 @@ exports.signIn = tryCatch(async(req, res, next) => {
         tokenFuc(user, name)(res)
         req.session[name] = tokenSaveData(user, name)
     }
-    console.log(req.session[name]);
 
     res.status(200).json({result: true, state, message, user: req.session.user})
 })
