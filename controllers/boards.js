@@ -78,7 +78,7 @@ exports.create = tryCatch(async(req, res, next) => {
 })
 
 exports.read = tryCatch(async(req, res, next) => {
-    const { boardType, page = 1, search, type } = req.query;
+    const { boardType, page = 1, search, type, dateStart, dateEnd } = req.query;
     // console.log(boardType);
     // console.log(req.DBName);
     
@@ -153,6 +153,10 @@ exports.read = tryCatch(async(req, res, next) => {
     if (type) {
         conditions.push(`type = ?`);
         values.push(type);
+    }
+
+    if (dateStart && dateEnd) {
+        conditions.push(`DATE(${req.DBName}.created) BETWEEN '${dateStart}' AND '${dateEnd}'`);
     }
 
 
