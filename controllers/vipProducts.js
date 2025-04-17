@@ -19,7 +19,25 @@ exports.create = tryCatch(async(req, res, next) => {
 });
 
 exports.read = tryCatch(async(req, res, next) => {
-    const list = imgUrl(await dbQuery(`SELECT * FROM vipProducts ORDER BY created DESC`));
+    const { path, isAdmin } = req;
+    const fields = ['name', 'image', 'description', 'DATE_FORMAT(created, "%Y.%m.%d") as created'];
 
+    if(!isAdmin || path.includes('detail')){
+        fields.push('nameEng', 'price');  
+    }
+
+    if(isAdmin){
+        fields.push('id', `CASE WHEN visible = 1 THEN '노출' ELSE '숨김' END AS visible`)
+    }
+
+    let list = imgUrl(await dbQuery(`SELECT ${fields} FROM vipProducts ORDER BY created DESC`));
+    // if(!isAdmin){
+    //     list = list.map(({ visible, ...rest }) => rest);
+    // }
+    list = list.map((data, idx) => ({
+        ...data,
+        numb: ++idx,
+    }))
+    
     res.status(200).json({result: true, list})
 })

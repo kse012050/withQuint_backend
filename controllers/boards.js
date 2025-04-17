@@ -291,10 +291,6 @@ exports.detail = tryCatch(async(req, res, next) => {
 })
 
 exports.update = tryCatch(async(req, res, next) => {
-    console.log(req.keys);
-    console.log(req.values);
-    console.log(req.DBName);
-    
     await dbQuery(
         `
             UPDATE ${req.DBName}

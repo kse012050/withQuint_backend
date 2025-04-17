@@ -67,8 +67,6 @@ app.get('/', (req, res, next)=>{
 app.use((req, res, next)=>{
     const pathname = new URL(req.get('Referer')).pathname; 
     const isAdmin = pathname.includes('admin');
-    console.log(pathname);
-    
     
     let schemaName = req.originalUrl.split('/')[isAdmin && pathname.includes('admin/') ? 2 : 1];
     
