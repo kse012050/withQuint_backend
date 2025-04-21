@@ -24,19 +24,23 @@ exports.required = tryCatch(async(req, res, next) =>{
 exports.getFieldsAndValues = tryCatch(async(req, res, next) => {
     const keys = []
     const values = []
+    let id = ''
 
     Object.entries(req.body).forEach(([key, value])=>{
-        if(key !== 'boardId'){
-            keys.push(key);
-        }
         if(value === 'y' || value === 'n'){
             value = value === 'y'
         }
-        values.push(value);
+        if(key !== 'boardId'){
+            keys.push(key);
+            values.push(value);
+        }else{
+            id = value;
+        }
     })
-
+    
     req.keys = keys;
     req.values = values;
+    req.id = id;
 
     next();
 })

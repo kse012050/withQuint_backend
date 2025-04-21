@@ -291,13 +291,15 @@ exports.detail = tryCatch(async(req, res, next) => {
 })
 
 exports.update = tryCatch(async(req, res, next) => {
+    const { DBName, keys, values, id } = req;
+    
     await dbQuery(
         `
-            UPDATE ${req.DBName}
-            SET ${req.keys.map(key => `${key} = ?`).join(', ')}
+            UPDATE ${DBName}
+            SET ${keys.map(key => `${key} = ?`).join(', ')}
             WHERE id = ?
         `,
-        [...req.values]
+        [...values, id]
     );
     
     res.status(200).json({result: true})
