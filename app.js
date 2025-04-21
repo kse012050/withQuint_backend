@@ -66,9 +66,10 @@ app.get('/', (req, res, next)=>{
 // 들어온 path 값으로 DB 스키마 이름을 설정
 app.use((req, res, next)=>{
     const pathname = new URL(req.get('Referer')).pathname; 
+    const originUrl = req.originalUrl;
     const isAdmin = pathname.includes('admin');
     
-    let schemaName = req.originalUrl.split('/')[isAdmin && pathname.includes('admin/') ? 2 : 1];
+    let schemaName = originUrl.split('/')[originUrl.includes('admin') ? 2 : 1];
     
     if(schemaName.includes('?')){
         schemaName = schemaName.split('?')[0];

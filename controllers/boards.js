@@ -209,6 +209,7 @@ exports.read = tryCatch(async(req, res, next) => {
 
 exports.detail = tryCatch(async(req, res, next) => {
     const { boardId, boardType } = req.query;
+    const { isAdmin } = req;
     let fields = ['id', 'title', 'content', 'content', 'created'];
     const isPrevNext = ['recommendation', 'revenue', 'stock'];
     const isSecretField = ['vip', 'clinic'];
@@ -247,6 +248,7 @@ exports.detail = tryCatch(async(req, res, next) => {
         `,
         values
     )
+    
 
     if(!data){
         console.log(data);
@@ -256,7 +258,9 @@ exports.detail = tryCatch(async(req, res, next) => {
     sendData = data ? { data: { ...data } } : { isData: null };
     
     // 이전/다음 글 쿼리
-    if(isPrevNext.includes(boardType) && (data.prev || data.next)){
+    console.log(isAdmin);
+    
+    if(!isAdmin && isPrevNext.includes(boardType) && (data.prev || data.next)){
         let post = {}
         const [prev, next] = await dbQuery(
             `
