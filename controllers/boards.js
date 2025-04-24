@@ -60,8 +60,6 @@ exports.main = tryCatch(async(req, res, next) => {
 })
 
 exports.create = tryCatch(async(req, res, next) => {
-    console.log('생성');
-    
     await dbQuery(
         `
             INSERT INTO ${req.DBName}
@@ -76,20 +74,15 @@ exports.create = tryCatch(async(req, res, next) => {
         imgUpload(req, res, next)
     }
     
-    res.status(200).json({result: true, state: true})
+    res.status(200).json({result: true, state: true, message: '등록되었습니다.'})
 })
 
 exports.read = tryCatch(async(req, res, next) => {
     const { boardType, page = 1, search, type, dateStart, dateEnd } = req.query;
-    // console.log(boardType);
-    // console.log(req.DBName);
-    
     // boardType
     // recommendation, revenue, stock, vip, clinic, notice
     const limit = 10;
-    // let fields = ['id', 'title', 'new', `DATE_FORMAT(created, '%Y.%m.%d') AS created`];
-    // let fields = ['id', 'title', 'new', `DATE_FORMAT(created, '%Y.%m.%d') AS created`];
-    let fields = ['id', 'title', `new`, 'created'/* , `CASE WHEN new = 1 THEN 'y' ELSE 'n' END AS new` */]
+    let fields = ['id', 'title', `new`, 'created']
     const isTypeField = ['recommendation', 'revenue']
     const isImageField = ['stock']
     const isSecretField = ['vip', 'clinic'];
@@ -253,10 +246,6 @@ exports.detail = tryCatch(async(req, res, next) => {
     
 
     // 작성자 추가
-    // fields.push(`users.userId AS author`)
-    // joinConditions = 'LEFT JOIN users ON boards.author = users.id'
-
-    
     fields.push(`${!isSecret ? 'admin' : 'users'}.nickname AS author`)
     joinConditions = `LEFT JOIN ${!isSecret ? 'admin' : 'users'} ON boards.author = ${!isSecret ? 'admin' : 'users'}.id`
 
@@ -267,8 +256,6 @@ exports.detail = tryCatch(async(req, res, next) => {
         fields.push(`(SELECT id FROM boards WHERE id < p.boardId AND boardType = p.boardType ORDER BY id DESC LIMIT 1) AS prev`)
         fields.push(`(SELECT id FROM boards WHERE id > p.boardId AND boardType = p.boardType ORDER BY id ASC LIMIT 1) AS next`)
     }
-    console.log(fields);
-    console.log(joinConditions);
     
     let [data] = await dbQuery(
         `
@@ -328,11 +315,15 @@ exports.update = tryCatch(async(req, res, next) => {
         [...values, id]
     );
     
-    res.status(200).json({result: true, state: true})
+    res.status(200).json({result: true, state: true, message: '수정되었습니다.'})
 })
 
 exports.remove = tryCatch(async(req, res, next) => {
+    if(!req.cookies.adminAccessToken){
+        return res.status(200).json({ result: true, state: false, message: '권한이 없습니다.' });
+    }
+    
     await dbQuery(`DELETE FROM boards WHERE id = ?`, req.values);
 
-    res.status(200).json({result: true})
+    res.status(200).json({result: true, state: true, message: '삭제되었습니다.'})
 })

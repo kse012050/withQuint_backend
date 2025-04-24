@@ -4,7 +4,6 @@ const { tryCatch, dbQuery } = require('../utils');
 exports.permission = tryCatch(async(req, res, next) => {
     const { isAdmin, originalUrl } = req;
     const { boardType } = req.body;
-    const type = originalUrl.split('/').at(-1);
     const boardsAdmin = ['recommendation', 'revenue', 'stock', 'notice'];
     const boardsUser = ['vip', 'clinic'];
     const token = req.cookies[`${isAdmin ? 'admin' : 'user'}AccessToken`];
@@ -22,7 +21,6 @@ exports.required = tryCatch(async(req, res, next) =>{
     const result = await dbQuery(`DESCRIBE ${req.DBName}`);
     
     let required = result.filter(data=> data.Key !== 'PRI' && !data.Default && data.Null === 'NO').map(data=> data.Field)
-    console.log(req.author);
     
     if(req.author){
         required = required.filter((key) => key !== 'author')
@@ -48,7 +46,7 @@ exports.getFieldsAndValues = tryCatch(async(req, res, next) => {
     const keys = []
     const values = []
     let id = ''
-
+    
     Object.entries(req.body).forEach(([key, value])=>{
         if(value === 'y' || value === 'n'){
             value = value === 'y'
