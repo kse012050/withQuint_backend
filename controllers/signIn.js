@@ -79,6 +79,9 @@ exports.signIn = tryCatch(async(req, res, next) => {
 // });
 
 exports.auth = tryCatch(async(req, res, next) => {
+    console.log('유저', req.cookies.userAccessToken);
+    console.log('관리자', req.cookies.adminRefreshToken);
+    
     const name = !req.isAdmin ? 'user' : 'admin';
     const info = req.session[name];
     let accessToken = req.cookies[`${name}AccessToken`];

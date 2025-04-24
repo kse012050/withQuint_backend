@@ -1,9 +1,31 @@
+const jwt = require('jsonwebtoken');
 const { tryCatch, dbQuery } = require('../utils');
+
+exports.permission = tryCatch(async(req, res, next) => {
+    const { isAdmin, originalUrl } = req;
+    const { boardType } = req.body;
+    const type = originalUrl.split('/').at(-1);
+    const boardsAdmin = ['recommendation', 'revenue', 'stock', 'notice'];
+    const boardsUser = ['vip', 'clinic'];
+    const token = req.cookies[`${isAdmin ? 'admin' : 'user'}AccessToken`];
+    
+    if(!(isAdmin && boardsAdmin.includes(boardType)) && !boardsUser.includes(boardType)) {
+        return res.status(200).json({ result: true, state: false, message: '권한이 없습니다.' });
+    }
+    req.author = jwt.decode(token).id;
+
+    next();
+    
+})
 
 exports.required = tryCatch(async(req, res, next) =>{
     const result = await dbQuery(`DESCRIBE ${req.DBName}`);
     
     let required = result.filter(data=> data.Key !== 'PRI' && !data.Default && data.Null === 'NO').map(data=> data.Field)
+
+    if(req.author){
+        required = required.filter((key) => key !== 'author')
+    }
     
     if(req.required){
         required = [...required, ...req.required]

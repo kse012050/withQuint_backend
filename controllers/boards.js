@@ -60,6 +60,8 @@ exports.main = tryCatch(async(req, res, next) => {
 })
 
 exports.create = tryCatch(async(req, res, next) => {
+    console.log('생성');
+    
     await dbQuery(
         `
             INSERT INTO ${req.DBName}
@@ -213,7 +215,9 @@ exports.detail = tryCatch(async(req, res, next) => {
     let fields = ['id', 'title', 'content', 'content', 'created'];
     const isPrevNext = ['recommendation', 'revenue', 'stock'];
     const isSecretField = ['vip', 'clinic'];
-    const isBooleanField = ['new', 'secret'];
+    const isBooleanField = ['new', 'secret', 'visible'];
+    const isAdminTypeField = ['recommendation', 'revenue'];
+    const isAdminImageField = ['stock'];
     let joinConditions = ''
     let values = [boardId, boardType]
 
@@ -222,24 +226,49 @@ exports.detail = tryCatch(async(req, res, next) => {
         fields.push(`secret`)
     }
 
+    if(isAdmin){
+        fields.push(`visible`)
+        if(isAdminTypeField.includes(boardType)){
+            fields.push(`type`)
+        }
+        if(isAdminImageField.includes(boardType)){
+            fields.push(`image`)
+        }
+    }
 
-    // fields 명시, boolean AS 'y' or 'n'
-    fields = fields.map((name) => isBooleanField.includes(name) ? `CASE WHEN ${req.DBName}.${name} = 1 THEN 'y' ELSE 'n' END AS ${name}` : `${req.DBName}.${name}`);
+
+    fields = fields.map((name) => {
+        const tableField = `${req.DBName}.${name}`;
+        // fields 명시, boolean AS 'y' or 'n'
+        if(isBooleanField.includes(name)){
+            return `CASE WHEN ${tableField} = 1 THEN 'y' ELSE 'n' END AS ${name}`;
+        }
+        // 날짜 변경
+        if (name === 'created') {
+            return `DATE_FORMAT(${tableField}, '%Y.%m.%d') AS ${name}`;
+        }
+        return tableField;
+    });
     
 
     // 작성자 추가
     fields.push(`users.userId AS author`)
     joinConditions = 'LEFT JOIN users ON boards.author = users.id'
 
-    let sendData = {}
-    const [data] = await dbQuery(
+
+    if(!isAdmin && isPrevNext.includes(boardType)){
+        // fields.push(`(SELECT COUNT(*) FROM boards WHERE boardType = p.boardType AND created > (SELECT created FROM boards WHERE id = p.boardId)) AS prev`)
+        // fields.push(`(SELECT COUNT(*) FROM boards WHERE boardType = p.boardType AND created < (SELECT created FROM boards WHERE id = p.boardId)) AS next`)
+        fields.push(`(SELECT id FROM boards WHERE id < p.boardId AND boardType = p.boardType ORDER BY id DESC LIMIT 1) AS prev`)
+        fields.push(`(SELECT id FROM boards WHERE id > p.boardId AND boardType = p.boardType ORDER BY id ASC LIMIT 1) AS next`)
+    }
+
+    let [data] = await dbQuery(
         `
             WITH params AS (
                 SELECT ? AS boardId, ? AS boardType
             )
-            SELECT ${fields.join(',')},
-                (SELECT id FROM boards WHERE id < p.boardId AND boardType = p.boardType ORDER BY id DESC LIMIT 1) AS prev,
-                (SELECT id FROM boards WHERE id > p.boardId AND boardType = p.boardType ORDER BY id ASC LIMIT 1) AS next
+            SELECT ${fields.join(',')}
             FROM ${req.DBName}
             ${joinConditions}
             , params p  
@@ -248,19 +277,11 @@ exports.detail = tryCatch(async(req, res, next) => {
         `,
         values
     )
-    
 
-    if(!data){
-        console.log(data);
-        return res.status(200).json({result: false})
-    }
+    data = data && { data: data }
 
-    sendData = data ? { data: { ...data } } : { isData: null };
-    
     // 이전/다음 글 쿼리
-    console.log(isAdmin);
-    
-    if(!isAdmin && isPrevNext.includes(boardType) && (data.prev || data.next)){
+    if(data?.data.prev || data?.data.next){
         let post = {}
         const [prev, next] = await dbQuery(
             `
@@ -270,31 +291,27 @@ exports.detail = tryCatch(async(req, res, next) => {
                 FROM boards AS boards
                 WHERE boards.id IN (?, ?);
             `,
-            [data.prev, data.next]
+            [data.data.prev, data.data.next]
         );
         post.prev = prev;
         post.next = next;
-        sendData = {...sendData, post}
+        data = {...data, post}
     }
 
-    
-    if(isSecretField.includes(boardType) && data){
+    if(isSecretField.includes(boardType) && data.data.secret === 'y'){
         // access 토큰이 만료 되었을 때 ( refesh 토근 있음 ) access 토큰 새로 받아 올 수 있나?
         const token = req.cookies.userAccessToken;
-        const isUpdateUser = token && data.author === JSON.parse(atob(token.split(".")[1])).userId
-        const isSecretUser = isUpdateUser || data.secret === 'n';
-        sendData = { ...sendData, isUpdateUser, isSecretUser };
+        const isSecretUser = !!token && data.data.author === JSON.parse(atob(token.split(".")[1])).userId
+        data = { ...data, isSecretUser };
     }
-
-    Object.keys(data).filter((key) => key !== 'prev' || key !== 'next');
-
-    data.created = data.created.toISOString().replace("T", " ").slice(0, 16).replace(/-/g, ".")
-    // console.log(sendData);
     
-    res.status(200).json({result: true, ...sendData})
+    
+    res.status(200).json({result: true, state: !!data, ...data})
 })
 
 exports.update = tryCatch(async(req, res, next) => {
+    console.log('업데이트');
+    
     const { DBName, keys, values, id } = req;
     
     await dbQuery(
@@ -306,7 +323,7 @@ exports.update = tryCatch(async(req, res, next) => {
         [...values, id]
     );
     
-    res.status(200).json({result: true})
+    res.status(200).json({result: true, state: true})
 })
 
 exports.remove = tryCatch(async(req, res, next) => {

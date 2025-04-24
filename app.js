@@ -80,7 +80,7 @@ app.use((req, res, next)=>{
     }
 
     req.DBName = schemaName;
-    isAdmin && (req.isAdmin = isAdmin);
+    req.isAdmin = isAdmin;
     
     next();
     
