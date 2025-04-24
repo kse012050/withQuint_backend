@@ -9,7 +9,7 @@ exports.permission = tryCatch(async(req, res, next) => {
     const boardsUser = ['vip', 'clinic'];
     const token = req.cookies[`${isAdmin ? 'admin' : 'user'}AccessToken`];
     
-    if(!(isAdmin && boardsAdmin.includes(boardType)) && !boardsUser.includes(boardType)) {
+    if(!token || (!(isAdmin && boardsAdmin.includes(boardType)) && !boardsUser.includes(boardType))) {
         return res.status(200).json({ result: true, state: false, message: '권한이 없습니다.' });
     }
     req.author = jwt.decode(token).id;
@@ -22,7 +22,8 @@ exports.required = tryCatch(async(req, res, next) =>{
     const result = await dbQuery(`DESCRIBE ${req.DBName}`);
     
     let required = result.filter(data=> data.Key !== 'PRI' && !data.Default && data.Null === 'NO').map(data=> data.Field)
-
+    console.log(req.author);
+    
     if(req.author){
         required = required.filter((key) => key !== 'author')
     }
@@ -59,6 +60,11 @@ exports.getFieldsAndValues = tryCatch(async(req, res, next) => {
             id = value;
         }
     })
+
+    if(req.author){
+        keys.push('author')
+        values.push(req.author)
+    }
     
     req.keys = keys;
     req.values = values;

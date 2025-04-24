@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/main', main)
 
 router.get('/', read);
-router.post('/create', imgInfo, required, getFieldsAndValues, create);
+router.post('/create', permission, imgInfo, required, getFieldsAndValues, create);
 router.get('/detail', detail)
 router.post('/update', permission, required, getFieldsAndValues, update)
 router.post('/remove', getFieldsAndValues, remove);

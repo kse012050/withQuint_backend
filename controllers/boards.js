@@ -76,7 +76,7 @@ exports.create = tryCatch(async(req, res, next) => {
         imgUpload(req, res, next)
     }
     
-    res.status(200).json({result: true})
+    res.status(200).json({result: true, state: true})
 })
 
 exports.read = tryCatch(async(req, res, next) => {
@@ -215,6 +215,7 @@ exports.detail = tryCatch(async(req, res, next) => {
     let fields = ['id', 'title', 'content', 'content', 'created'];
     const isPrevNext = ['recommendation', 'revenue', 'stock'];
     const isSecretField = ['vip', 'clinic'];
+    const isSecret = isSecretField.includes(boardType);
     const isBooleanField = ['new', 'secret', 'visible'];
     const isAdminTypeField = ['recommendation', 'revenue'];
     const isAdminImageField = ['stock'];
@@ -222,7 +223,7 @@ exports.detail = tryCatch(async(req, res, next) => {
     let values = [boardId, boardType]
 
 
-    if(isSecretField.includes(boardType)){
+    if(isSecret){
         fields.push(`secret`)
     }
 
@@ -252,8 +253,12 @@ exports.detail = tryCatch(async(req, res, next) => {
     
 
     // 작성자 추가
-    fields.push(`users.userId AS author`)
-    joinConditions = 'LEFT JOIN users ON boards.author = users.id'
+    // fields.push(`users.userId AS author`)
+    // joinConditions = 'LEFT JOIN users ON boards.author = users.id'
+
+    
+    fields.push(`${!isSecret ? 'admin' : 'users'}.nickname AS author`)
+    joinConditions = `LEFT JOIN ${!isSecret ? 'admin' : 'users'} ON boards.author = ${!isSecret ? 'admin' : 'users'}.id`
 
 
     if(!isAdmin && isPrevNext.includes(boardType)){
@@ -262,7 +267,9 @@ exports.detail = tryCatch(async(req, res, next) => {
         fields.push(`(SELECT id FROM boards WHERE id < p.boardId AND boardType = p.boardType ORDER BY id DESC LIMIT 1) AS prev`)
         fields.push(`(SELECT id FROM boards WHERE id > p.boardId AND boardType = p.boardType ORDER BY id ASC LIMIT 1) AS next`)
     }
-
+    console.log(fields);
+    console.log(joinConditions);
+    
     let [data] = await dbQuery(
         `
             WITH params AS (
@@ -310,8 +317,6 @@ exports.detail = tryCatch(async(req, res, next) => {
 })
 
 exports.update = tryCatch(async(req, res, next) => {
-    console.log('업데이트');
-    
     const { DBName, keys, values, id } = req;
     
     await dbQuery(
