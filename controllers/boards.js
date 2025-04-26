@@ -215,7 +215,6 @@ exports.detail = tryCatch(async(req, res, next) => {
     let joinConditions = ''
     let values = [boardId, boardType]
 
-
     if(isSecret){
         fields.push(`secret`)
     }
@@ -249,13 +248,14 @@ exports.detail = tryCatch(async(req, res, next) => {
     fields.push(`${!isSecret ? 'admin' : 'users'}.nickname AS author`)
     joinConditions = `LEFT JOIN ${!isSecret ? 'admin' : 'users'} ON boards.author = ${!isSecret ? 'admin' : 'users'}.id`
 
-
+    // 이전, 다음 글
     if(!isAdmin && isPrevNext.includes(boardType)){
         // fields.push(`(SELECT COUNT(*) FROM boards WHERE boardType = p.boardType AND created > (SELECT created FROM boards WHERE id = p.boardId)) AS prev`)
         // fields.push(`(SELECT COUNT(*) FROM boards WHERE boardType = p.boardType AND created < (SELECT created FROM boards WHERE id = p.boardId)) AS next`)
         fields.push(`(SELECT id FROM boards WHERE id < p.boardId AND boardType = p.boardType ORDER BY id DESC LIMIT 1) AS prev`)
         fields.push(`(SELECT id FROM boards WHERE id > p.boardId AND boardType = p.boardType ORDER BY id ASC LIMIT 1) AS next`)
     }
+
     
     let [data] = await dbQuery(
         `
@@ -291,11 +291,21 @@ exports.detail = tryCatch(async(req, res, next) => {
         post.next = next;
         data = {...data, post}
     }
-
+    
     if(isSecretField.includes(boardType) && data.data.secret === 'y'){
         // access 토큰이 만료 되었을 때 ( refesh 토근 있음 ) access 토큰 새로 받아 올 수 있나?
         const token = req.cookies.userAccessToken;
-        const isSecretUser = !!token && data.data.author === JSON.parse(atob(token.split(".")[1])).userId
+        const [{ authorId }] = await dbQuery(
+            
+            `
+                SELECT author AS authorId
+                FROM ${req.DBName}
+                WHERE id = ?
+            `,
+            boardId
+        )
+        const isSecretUser = !!token && authorId == JSON.parse(atob(token.split(".")[1])).id
+        
         data = { ...data, isSecretUser };
     }
     
