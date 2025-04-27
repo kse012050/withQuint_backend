@@ -49,6 +49,19 @@ const imgUpload = (req, res, next) => {
     });
 }
 
+const imgRemove = (req, fileName) => {
+    const directoryName = req.originalUrl.split('/')[1];
+    const filePath = path.join(__dirname, `${directoryName ? `/${directoryName}`: ''}`, fileName);
+
+    fs.unlinkSync(filePath, (err) => {
+        if (err) {
+            console.error('파일 삭제 실패:', err);
+            return next(err);
+        }
+        console.log('파일 삭제 성공');
+    });
+}
+
 
 function imgUrl(data){
     return data.map((item) =>
@@ -59,4 +72,4 @@ function imgUrl(data){
     );
 }
 
-module.exports = { imgInfo, imgUpload, imgUrl };
+module.exports = { imgInfo, imgUpload, imgUrl, imgRemove };

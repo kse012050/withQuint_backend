@@ -1,5 +1,7 @@
-const { imgUpload, imgUrl } = require('../uploads');
+const { imgUpload, imgUrl, imgRemove } = require('../uploads');
 const { tryCatch, dbQuery } = require('../utils');
+const path = require('path');
+const fs = require('fs');
 
 exports.main = tryCatch(async(req, res, next) => {
     let [ { data } ] = await dbQuery(
@@ -310,6 +312,10 @@ exports.detail = tryCatch(async(req, res, next) => {
     }
     
     
+    if(Object.keys(data.data).some((key) => key ==='image')){
+        [data.data] = imgUrl([data.data])
+    }
+    
     res.status(200).json({result: true, state: !!data, ...data})
 })
 
@@ -332,8 +338,15 @@ exports.remove = tryCatch(async(req, res, next) => {
     if(!req.cookies.adminAccessToken){
         return res.status(200).json({ result: true, state: false, message: '권한이 없습니다.' });
     }
+
+    const [{ image }] = await dbQuery(`SELECT image FROM ${req.DBName} WHERE id = ?`, req.values);
     
     await dbQuery(`DELETE FROM boards WHERE id = ?`, req.values);
+
+    if(image){
+        imgRemove(req, image.split('/').at(-1))
+    }
+    
 
     res.status(200).json({result: true, state: true, message: '삭제되었습니다.'})
 })
