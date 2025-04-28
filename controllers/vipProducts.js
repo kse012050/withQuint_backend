@@ -1,5 +1,5 @@
 const { imgUrl, imgUpload } = require('../uploads');
-const { tryCatch, dbQuery } = require('../utils');
+const { tryCatch, dbQuery, fieldsDataChange } = require('../utils');
 
 exports.create = tryCatch(async(req, res, next) => {
     await dbQuery(
@@ -39,5 +39,27 @@ exports.read = tryCatch(async(req, res, next) => {
         numb: ++idx,
     }))
     
-    res.status(200).json({result: true, list})
+    res.status(200).json({result: true, state: !!list, list})
+})
+
+exports.detail = tryCatch(async(req, res, next) => {
+    const { DBName } = req;
+    const { boardId } = req.query;
+    let fields = ['id', 'name', 'nameEng', 'price', 'description', 'image', 'created', 'visible'];
+
+    fields = fieldsDataChange(DBName, fields)
+
+    let [data] = await dbQuery(
+        `
+            SELECT ${fields.join(',')}
+            FROM ${DBName}
+            WHERE id = ?
+            ORDER BY created DESC
+        `,
+        [boardId]
+    )
+    console.log(data);
+
+    res.status(200).json({result: true, state: !!data, data})
+    
 })

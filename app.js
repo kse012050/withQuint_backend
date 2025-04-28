@@ -103,9 +103,8 @@ app.use((req, res, next)=>{
 // 에러 미들웨어
 app.use((err, req, res, next)=>{
     console.error(err);
-
     console.log('에러 미들웨어');
-    res.status(500).json({result: false, error: '서버 에러입니다.'})
+    res.status(200).json({result: false, error: '서버 에러입니다.'})
 })
 
 
