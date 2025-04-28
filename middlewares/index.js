@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const { tryCatch, dbQuery } = require('../utils');
 
 exports.permissionBoard = tryCatch(async(req, res, next) => {
-    const { isAdmin } = req;
+    const { isAdmin, path } = req;
     const { boardType } = req.body;
     const boardsAdmin = ['recommendation', 'revenue', 'stock', 'notice'];
     const boardsUser = ['vip', 'clinic'];
@@ -11,8 +11,11 @@ exports.permissionBoard = tryCatch(async(req, res, next) => {
     if(!token || (!(isAdmin && boardsAdmin.includes(boardType)) && !boardsUser.includes(boardType))) {
         return res.status(200).json({ result: true, state: false, message: '권한이 없습니다.' });
     }
-    req.author = jwt.decode(token).id;
 
+    // if(path.includes('create')){
+        req.author = jwt.decode(token).id;
+    // }
+    
     next();
 })
 

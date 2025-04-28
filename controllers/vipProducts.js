@@ -21,21 +21,30 @@ exports.create = tryCatch(async(req, res, next) => {
 });
 
 exports.read = tryCatch(async(req, res, next) => {
-    const { path, isAdmin } = req;
-    const fields = ['id', 'name', 'image', 'description', 'DATE_FORMAT(created, "%Y.%m.%d") as created'];
+    const { DBName, path, isAdmin } = req;
+    const fields = ['id', 'name', 'image', 'description', 'created'];
+    let conditions = [];
+    let isDataHangle = true;
 
     if(!isAdmin || path.includes('detail')){
-        fields.push('nameEng', 'price');  
+        fields.push('nameEng', 'price');
     }
 
     if(isAdmin){
-        fields.push('id', `CASE WHEN visible = 1 THEN '노출' ELSE '숨김' END AS visible`)
+        fields.push(`visible`);
+    }else{
+        conditions.push('visible = 1');
     }
 
-    let list = imgUrl(await dbQuery(`SELECT ${fields} FROM vipProducts ORDER BY created DESC`));
-    // if(!isAdmin){
-    //     list = list.map(({ visible, ...rest }) => rest);
-    // }
+    let list = await dbQuery(
+        `
+            SELECT ${fieldsDataChange(DBName, fields, isDataHangle)}
+            FROM vipProducts
+            ${conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''}
+            ORDER BY created DESC
+        `
+    );
+   
     list = list.map((data, idx) => ({
         ...data,
         numb: ++idx,
@@ -47,13 +56,11 @@ exports.read = tryCatch(async(req, res, next) => {
 exports.detail = tryCatch(async(req, res, next) => {
     const { DBName } = req;
     const { vipProductId } = req.query;
-    let fields = [/* 'id', 'name', 'nameEng', 'price', 'description', */ 'image', 'created', 'visible'];
+    const fields = [/* 'id', 'name', 'nameEng', 'price', 'description', */ 'image', 'created', 'visible'];
     
-    fields = fieldsDataChange(DBName, fields)
-
-    let [data] = await dbQuery(
+    const [data] = await dbQuery(
         `
-            SELECT *, ${fields.join(',')}
+            SELECT *, ${fieldsDataChange(DBName, fields)}
             FROM ${DBName}
             WHERE id = ?
             ORDER BY created DESC

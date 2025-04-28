@@ -27,29 +27,49 @@ const jwtVerifyAsync = (token, secret) =>
         });
 });
 
-const fieldsDataChange = (DBName, fields) => {
+const fieldsDataChange = (DBName, fields, isDataHangle) => {
     const isBooleanField = ['new', 'secret'];
-
+    
     return fields.map((name) => {
         const tableField = `${DBName}.${name}`;
+
         // fields 명시, boolean AS 'y' or 'n'
-        if (isBooleanField.includes(name)) {
+        if(isBooleanField.includes(name)) {
             return `CASE WHEN ${tableField} = 1 THEN 'y' ELSE 'n' END AS ${name}`;
         }
-        if (name === 'type') {
-            return `CASE WHEN ${tableField} = 'free' THEN '무료' ELSE 'VIP' END AS ${name}`;
+        if(name === 'type') {
+            let typeType = { free: 'free', vip: 'vip' };
+            if(isDataHangle){
+                typeType = { free: '무료', vip: 'VIP' };
+            }
+            return `CASE WHEN ${tableField} = 'free' THEN '${typeType['free']}' ELSE '${typeType['vip']}' END AS ${name}`;
+        }
+        if(name.includes('nickname')){
+            return `${name} AS author`;
         }
         // 날짜 변경
-        if (name === 'created') {
+        if(name === 'created') {
             return `DATE_FORMAT(${tableField}, '%Y.%m.%d') AS ${name}`;
         }
         // fields 명시, visible AS '노출' or '숨김'
-        if (name === 'visible') {
-            return `CASE WHEN ${tableField} = 1 THEN 'y' ELSE 'n' END AS ${name}`;
+        if(name === 'visible') {
+            let visibleType = { true: 'y', false: 'n' };
+            if(isDataHangle){
+                visibleType = { true: '노출', false: '숨김' };
+            }
+            return `CASE WHEN ${tableField} = 1 THEN '${visibleType[true]}' ELSE '${visibleType[false]}' END AS ${name}`;
         }
 
-        if (name === 'image') {
+        if(name === 'image') {
             return `CONCAT('http://${process.env.HOST}:${process.env.PORT}', image) AS image`;
+        }
+
+        if(name === 'prev'){
+            return `(SELECT id FROM boards WHERE id < p.boardId AND boardType = p.boardType ORDER BY id DESC LIMIT 1) AS prev`
+        }
+
+        if(name === 'next'){
+            return `(SELECT id FROM boards WHERE id > p.boardId AND boardType = p.boardType ORDER BY id ASC LIMIT 1) AS next`
         }
     
         return tableField;

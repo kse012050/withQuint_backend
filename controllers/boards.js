@@ -1,5 +1,5 @@
 const { imgUpload, imgUrl, imgRemove } = require('../uploads');
-const { tryCatch, dbQuery } = require('../utils');
+const { tryCatch, dbQuery, fieldsDataChange } = require('../utils');
 const path = require('path');
 const fs = require('fs');
 
@@ -82,7 +82,8 @@ exports.create = tryCatch(async(req, res, next) => {
 })
 
 exports.read = tryCatch(async(req, res, next) => {
-    const { boardType, page = 1, search, type, dateStart, dateEnd } = req.query;
+    const { DBName, isAdmin, query } = req;
+    const { boardType, page = 1, search, type, dateStart, dateEnd } = query;
     // boardType
     // recommendation, revenue, stock, vip, clinic, notice
     const limit = 10;
@@ -91,15 +92,17 @@ exports.read = tryCatch(async(req, res, next) => {
     const isImageField = ['stock']
     const isSecretField = ['vip', 'clinic'];
     const isAuthorField = ['vip', 'clinic'];
-    const isBooleanField = ['new', 'secret'];
     let joinConditions = ''
     let conditions = [`boardType = ?`];
     let values = [boardType];
+    let isDataHangle = true;
 
 
     // 출력 필드 추가
-    if(req.fields){
-        fields.push(...req.fields)
+    if(isAdmin){
+        fields.push('visible')
+    }else{
+        conditions.push(`visible = 1`)
     }
     
 
@@ -115,33 +118,11 @@ exports.read = tryCatch(async(req, res, next) => {
         fields.push(`secret`)
     }
 
-    fields = fields.map((name) => {
-        const tableField = `${req.DBName}.${name}`;
-        // fields 명시, boolean AS 'y' or 'n'
-        if (isBooleanField.includes(name)) {
-            return `CASE WHEN ${tableField} = 1 THEN 'y' ELSE 'n' END AS ${name}`;
-        }
-        if (name === 'type') {
-            return `CASE WHEN ${tableField} = 'free' THEN '무료' ELSE 'VIP' END AS ${name}`;
-        }
-        // 날짜 변경
-        if (name === 'created') {
-            return `DATE_FORMAT(${tableField}, '%Y.%m.%d') AS ${name}`;
-        }
-        // fields 명시, visible AS '노출' or '숨김'
-        if (name === 'visible') {
-            return `CASE WHEN ${tableField} = 1 THEN '노출' ELSE '숨김' END AS ${name}`;
-        }
-    
-        return tableField;
-    });
-    
     // 작성자 추가
     if(isAuthorField.includes(boardType)){
-        fields.push(`users.userId AS author`)
+        fields.push(`users.nickname`)
         joinConditions = 'LEFT JOIN users ON boards.author = users.id'
     }
-
 
     // 페이징, 검색
     if (search) {
@@ -155,14 +136,14 @@ exports.read = tryCatch(async(req, res, next) => {
     }
 
     if (dateStart && dateEnd) {
-        conditions.push(`DATE(${req.DBName}.created) BETWEEN '${dateStart}' AND '${dateEnd}'`);
+        conditions.push(`DATE(${DBName}.created) BETWEEN '${dateStart}' AND '${dateEnd}'`);
     }
 
 
     const [{ totalCount }] = await dbQuery(
         `
             SELECT COUNT(*) AS totalCount
-            FROM ${req.DBName}
+            FROM ${DBName}
             WHERE ${conditions.join(' AND ')};
         `,
         values
@@ -170,8 +151,8 @@ exports.read = tryCatch(async(req, res, next) => {
     
     let list = await dbQuery(
         `
-            SELECT ${fields.join(',')}
-            FROM ${req.DBName}
+            SELECT ${fieldsDataChange(DBName, fields, isDataHangle)}
+            FROM ${DBName}
             ${joinConditions}
             WHERE ${conditions.join(' AND ')}
             ORDER BY boards.created DESC
@@ -183,9 +164,6 @@ exports.read = tryCatch(async(req, res, next) => {
     list = list.map((data, idx) => ({
         ...data,
         numb: totalCount - (page - 1) * limit - idx,
-        // created: data.created.toISOString().split('T')[0].replaceAll('-', '.'),
-        // new: data.new === 'y'
-        // secret: data.secret === 'y'
     }))
 
     const info = {
@@ -195,19 +173,12 @@ exports.read = tryCatch(async(req, res, next) => {
         totalPage: Math.ceil(totalCount / limit),
     }
 
-    // 굳이?
-    // if(list.some((obj)=> Object.keys(obj).some((key) => key ==='image'))){
-    //     list = imgUrl(list)
-    // }
-
-    list = imgUrl(list) 
-
     res.status(200).json({result: true, info, list})
 })
 
 exports.detail = tryCatch(async(req, res, next) => {
-    const { boardId, boardType } = req.query;
-    const { isAdmin } = req;
+    const { DBName, isAdmin, query } = req;
+    const { boardId, boardType } = query;
     let fields = ['id', 'title', 'content', 'content', 'created'];
     const isPrevNext = ['recommendation', 'revenue', 'stock'];
     const isSecretField = ['vip', 'clinic'];
@@ -217,6 +188,7 @@ exports.detail = tryCatch(async(req, res, next) => {
     const isAdminImageField = ['stock'];
     let joinConditions = ''
     let values = [boardId, boardType]
+    let isDataHangle = false;
 
     if(isSecret){
         fields.push(`secret`)
@@ -231,32 +203,22 @@ exports.detail = tryCatch(async(req, res, next) => {
             fields.push(`image`)
         }
     }
-
-
-    fields = fields.map((name) => {
-        const tableField = `${req.DBName}.${name}`;
-        // fields 명시, boolean AS 'y' or 'n'
-        if(isBooleanField.includes(name)){
-            return `CASE WHEN ${tableField} = 1 THEN 'y' ELSE 'n' END AS ${name}`;
-        }
-        // 날짜 변경
-        if (name === 'created') {
-            return `DATE_FORMAT(${tableField}, '%Y.%m.%d') AS ${name}`;
-        }
-        return tableField;
-    });
     
 
     // 작성자 추가
-    fields.push(`${!isSecret ? 'admin' : 'users'}.nickname AS author`)
-    joinConditions = `LEFT JOIN ${!isSecret ? 'admin' : 'users'} ON boards.author = ${!isSecret ? 'admin' : 'users'}.id`
+    if(!isAdmin){
+        fields.push(`${!isSecret ? 'admin' : 'users'}.nickname`)
+        joinConditions = `LEFT JOIN ${!isSecret ? 'admin' : 'users'} ON boards.author = ${!isSecret ? 'admin' : 'users'}.id`
+    }
 
     // 이전, 다음 글
     if(!isAdmin && isPrevNext.includes(boardType)){
         // fields.push(`(SELECT COUNT(*) FROM boards WHERE boardType = p.boardType AND created > (SELECT created FROM boards WHERE id = p.boardId)) AS prev`)
         // fields.push(`(SELECT COUNT(*) FROM boards WHERE boardType = p.boardType AND created < (SELECT created FROM boards WHERE id = p.boardId)) AS next`)
-        fields.push(`(SELECT id FROM boards WHERE id < p.boardId AND boardType = p.boardType ORDER BY id DESC LIMIT 1) AS prev`)
-        fields.push(`(SELECT id FROM boards WHERE id > p.boardId AND boardType = p.boardType ORDER BY id ASC LIMIT 1) AS next`)
+        fields.push('prev')
+        fields.push('next')
+        // fields.push(`(SELECT id FROM boards WHERE id < p.boardId AND boardType = p.boardType ORDER BY id DESC LIMIT 1) AS prev`)
+        // fields.push(`(SELECT id FROM boards WHERE id > p.boardId AND boardType = p.boardType ORDER BY id ASC LIMIT 1) AS next`)
     }
 
     
@@ -265,7 +227,7 @@ exports.detail = tryCatch(async(req, res, next) => {
             WITH params AS (
                 SELECT ? AS boardId, ? AS boardType
             )
-            SELECT ${fields.join(',')}
+            SELECT ${fieldsDataChange(DBName, fields, isDataHangle)}
             FROM ${req.DBName}
             ${joinConditions}
             , params p  
@@ -274,7 +236,8 @@ exports.detail = tryCatch(async(req, res, next) => {
         `,
         values
     )
-
+    console.log(data);
+    
     data = data && { data: data }
 
     // 이전/다음 글 쿼리
