@@ -1,6 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { dbQuery } = require('../utils');
 
 function imgFileName( file ){
     const ext = path.extname(file.originalname);
@@ -32,27 +33,31 @@ const imgInfo = (req, res, next) => {
     }
 }
 
-const imgUpload = (req, res, next) => {
-    const directoryName = req.originalUrl.split('/')[1];
-    const uploadFolder = path.join(__dirname, `${directoryName ? `/${directoryName}`: ''}`);
+const imgUpload = (DBName, file) => {
+    // const directoryName = req.originalUrl.split('/')[1];
+    // const uploadFolder = path.join(__dirname, `${directoryName ? `/${directoryName}`: ''}`);
+    const uploadFolder = path.join(__dirname, DBName);
 
     if (!fs.existsSync(uploadFolder)) {
         fs.mkdirSync(uploadFolder, { recursive: true });
     }
 
-    const filePath = path.join(uploadFolder, req.file.filename);
+    const filePath = path.join(uploadFolder, file.filename);
 
-    fs.writeFile(filePath, req.file.buffer, (err) => {
+    fs.writeFileSync(filePath, file.buffer, (err) => {
         if (err) {
             return next(err);
         }
     });
 }
 
-const imgRemove = (req, fileName) => {
-    const directoryName = req.originalUrl.split('/')[1];
-    const filePath = path.join(__dirname, `${directoryName ? `/${directoryName}`: ''}`, fileName);
+const imgRemove = async(DBName, id) => {
+    const [{ image }] = await dbQuery(`SELECT image FROM ${DBName} WHERE id = ?`, id);
 
+    if(!image) return;
+    
+    const filePath = path.join(__dirname, image.replace('/img', ''));
+    
     fs.unlinkSync(filePath, (err) => {
         if (err) {
             console.error('파일 삭제 실패:', err);

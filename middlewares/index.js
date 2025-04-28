@@ -7,7 +7,6 @@ exports.permission = tryCatch(async(req, res, next) => {
     const boardsAdmin = ['recommendation', 'revenue', 'stock', 'notice'];
     const boardsUser = ['vip', 'clinic'];
     const token = req.cookies[`${isAdmin ? 'admin' : 'user'}AccessToken`];
-    console.log(req.body);
     
     if(!token || (!(isAdmin && boardsAdmin.includes(boardType)) && !boardsUser.includes(boardType))) {
         return res.status(200).json({ result: true, state: false, message: '권한이 없습니다.' });

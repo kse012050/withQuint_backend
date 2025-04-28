@@ -10,7 +10,7 @@ router.get('/main', main)
 router.get('/', read);
 router.post('/create', imgInfo, permission, required, getFieldsAndValues, create);
 router.get('/detail', imgInfo, detail)
-router.post('/update', permission, required, getFieldsAndValues, update)
+router.post('/update', imgInfo, permission, required, getFieldsAndValues, update)
 router.post('/remove', getFieldsAndValues, remove);
 
 module.exports = router;

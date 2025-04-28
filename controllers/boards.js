@@ -62,18 +62,20 @@ exports.main = tryCatch(async(req, res, next) => {
 })
 
 exports.create = tryCatch(async(req, res, next) => {
+    const { DBName, keys, values, file } = req;
+
     await dbQuery(
         `
-            INSERT INTO ${req.DBName}
-            (${req.keys.join(',')})
-            VALUES (${req.keys.map(()=>'?').join(',')})
+            INSERT INTO ${DBName}
+            (${keys.join(',')})
+            VALUES (${keys.map(()=>'?').join(',')})
         `,
-        req.values
+        values
     )
 
     // 이미지가 있는 경우 - 이미지 파일 저장
-    if(req.file){
-        imgUpload(req, res, next)
+    if(file){
+        imgUpload(DBName, file)
     }
     
     res.status(200).json({result: true, state: true, message: '등록되었습니다.'})
@@ -320,7 +322,12 @@ exports.detail = tryCatch(async(req, res, next) => {
 })
 
 exports.update = tryCatch(async(req, res, next) => {
-    const { DBName, keys, values, id } = req;
+    const { DBName, keys, values, id, file } = req;
+
+    if(file){
+        imgUpload(DBName, file)
+        imgRemove(DBName, id);
+    }
     
     await dbQuery(
         `
@@ -335,17 +342,17 @@ exports.update = tryCatch(async(req, res, next) => {
 })
 
 exports.remove = tryCatch(async(req, res, next) => {
+    const { DBName, id } = req;
     if(!req.cookies.adminAccessToken){
         return res.status(200).json({ result: true, state: false, message: '권한이 없습니다.' });
     }
-
-    const [{ image }] = await dbQuery(`SELECT image FROM ${req.DBName} WHERE id = ?`, req.values);
     
-    await dbQuery(`DELETE FROM boards WHERE id = ?`, req.values);
+    // 이미지 파일 삭제
+    imgRemove(DBName, id)
 
-    if(image){
-        imgRemove(req, image.split('/').at(-1))
-    }
+    // 데이터베이스에서 삭제
+    await dbQuery(`DELETE FROM ${DBName} WHERE id = ?`, id);
+
     
 
     res.status(200).json({result: true, state: true, message: '삭제되었습니다.'})

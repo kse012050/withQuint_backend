@@ -45,21 +45,25 @@ exports.read = tryCatch(async(req, res, next) => {
 exports.detail = tryCatch(async(req, res, next) => {
     const { DBName } = req;
     const { boardId } = req.query;
-    let fields = ['id', 'name', 'nameEng', 'price', 'description', 'image', 'created', 'visible'];
+    let fields = [/* 'id', 'name', 'nameEng', 'price', 'description', */ 'image', 'created', 'visible'];
 
     fields = fieldsDataChange(DBName, fields)
 
     let [data] = await dbQuery(
         `
-            SELECT ${fields.join(',')}
+            SELECT *, ${fields.join(',')}
             FROM ${DBName}
             WHERE id = ?
             ORDER BY created DESC
         `,
         [boardId]
     )
-    console.log(data);
+    // console.log(data);
 
     res.status(200).json({result: true, state: !!data, data})
+    
+})
+
+exports.update = tryCatch(async(req, res, next) => {
     
 })
