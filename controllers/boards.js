@@ -205,7 +205,6 @@ exports.read = tryCatch(async(req, res, next) => {
     res.status(200).json({result: true, info, list})
 })
 
-
 exports.detail = tryCatch(async(req, res, next) => {
     const { boardId, boardType } = req.query;
     const { isAdmin } = req;
@@ -343,17 +342,12 @@ exports.update = tryCatch(async(req, res, next) => {
 
 exports.remove = tryCatch(async(req, res, next) => {
     const { DBName, id } = req;
-    if(!req.cookies.adminAccessToken){
-        return res.status(200).json({ result: true, state: false, message: '권한이 없습니다.' });
-    }
     
     // 이미지 파일 삭제
     imgRemove(DBName, id)
 
     // 데이터베이스에서 삭제
     await dbQuery(`DELETE FROM ${DBName} WHERE id = ?`, id);
-
-    
 
     res.status(200).json({result: true, state: true, message: '삭제되었습니다.'})
 })

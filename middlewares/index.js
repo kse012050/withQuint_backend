@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken');
 const { tryCatch, dbQuery } = require('../utils');
 
-exports.permission = tryCatch(async(req, res, next) => {
-    const { isAdmin, originalUrl } = req;
+exports.permissionBoard = tryCatch(async(req, res, next) => {
+    const { isAdmin } = req;
     const { boardType } = req.body;
     const boardsAdmin = ['recommendation', 'revenue', 'stock', 'notice'];
     const boardsUser = ['vip', 'clinic'];
@@ -14,7 +14,6 @@ exports.permission = tryCatch(async(req, res, next) => {
     req.author = jwt.decode(token).id;
 
     next();
-    
 })
 
 exports.required = tryCatch(async(req, res, next) =>{
@@ -51,11 +50,11 @@ exports.getFieldsAndValues = tryCatch(async(req, res, next) => {
         if(value === 'y' || value === 'n'){
             value = value === 'y'
         }
-        if(key !== 'boardId'){
+        if(key.includes('Id')){
+            id = value;
+        }else{
             keys.push(key);
             values.push(value);
-        }else{
-            id = value;
         }
     })
 

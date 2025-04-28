@@ -1,26 +1,28 @@
-const { imgUrl, imgUpload } = require('../uploads');
+const { imgUrl, imgUpload, imgRemove } = require('../uploads');
 const { tryCatch, dbQuery, fieldsDataChange } = require('../utils');
 
 exports.create = tryCatch(async(req, res, next) => {
+    const { DBName, keys, values, file } = req;
+    
     await dbQuery(
         `
-            INSERT INTO ${req.DBName}
-            (${req.keys.join(',')})
-            VALUES (${req.keys.map(()=>'?').join(',')})
+            INSERT INTO ${DBName}
+            (${keys.join(',')})
+            VALUES (${keys.map(()=>'?').join(',')})
         `,
-        req.values
+        values
     )
 
-    if(req.file){
-        imgUpload(req, res, next)
+    if(file){
+        imgUpload(DBName, file)
     }
 
-    res.status(200).json({result: true})
+    res.status(200).json({result: true, state: true, message: '등록되었습니다.'})
 });
 
 exports.read = tryCatch(async(req, res, next) => {
     const { path, isAdmin } = req;
-    const fields = ['name', 'image', 'description', 'DATE_FORMAT(created, "%Y.%m.%d") as created'];
+    const fields = ['id', 'name', 'image', 'description', 'DATE_FORMAT(created, "%Y.%m.%d") as created'];
 
     if(!isAdmin || path.includes('detail')){
         fields.push('nameEng', 'price');  
@@ -44,9 +46,9 @@ exports.read = tryCatch(async(req, res, next) => {
 
 exports.detail = tryCatch(async(req, res, next) => {
     const { DBName } = req;
-    const { boardId } = req.query;
+    const { vipProductId } = req.query;
     let fields = [/* 'id', 'name', 'nameEng', 'price', 'description', */ 'image', 'created', 'visible'];
-
+    
     fields = fieldsDataChange(DBName, fields)
 
     let [data] = await dbQuery(
@@ -56,7 +58,7 @@ exports.detail = tryCatch(async(req, res, next) => {
             WHERE id = ?
             ORDER BY created DESC
         `,
-        [boardId]
+        [vipProductId]
     )
     // console.log(data);
 
@@ -65,5 +67,33 @@ exports.detail = tryCatch(async(req, res, next) => {
 })
 
 exports.update = tryCatch(async(req, res, next) => {
+    const { DBName, keys, values, id, file } = req;
+
+    if(file){
+        imgUpload(DBName, file)
+        imgRemove(DBName, id);
+    }
     
+    await dbQuery(
+        `
+            UPDATE ${DBName}
+            SET ${keys.map(key => `${key} = ?`).join(', ')}
+            WHERE id = ?
+        `,
+        [...values, id]
+    );
+    
+    res.status(200).json({result: true, state: true, message: '수정되었습니다.'})
+})
+
+exports.remove = tryCatch(async(req, res, next) => {
+    const { DBName, id } = req;
+    
+    // 이미지 파일 삭제
+    imgRemove(DBName, id)
+
+    // 데이터베이스에서 삭제
+    await dbQuery(`DELETE FROM ${DBName} WHERE id = ?`, id);
+
+    res.status(200).json({result: true, state: true, message: '삭제되었습니다.'})
 })
