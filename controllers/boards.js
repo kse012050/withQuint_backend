@@ -22,7 +22,7 @@ exports.main = tryCatch(async(req, res, next) => {
                             ),
                             CASE 
                                 WHEN boardType = 'stock' AND image IS NOT NULL THEN 
-                                    JSON_OBJECT('image', CONCAT('http://${process.env.HOST}:${process.env.PORT}', image))
+                                    JSON_OBJECT('image', CONCAT('http://${process.env.IMAGE_HOST}:${process.env.PORT}', image))
                                 ELSE 
                                     JSON_OBJECT()  
                             END,
@@ -176,6 +176,23 @@ exports.read = tryCatch(async(req, res, next) => {
     res.status(200).json({result: true, info, list})
 })
 
+exports.isSecret = tryCatch(async(req, res, next) => {
+    const { DBName, id } = req;
+    const token = req.cookies.userAccessToken;
+    const [{ authorId }] = await dbQuery(
+        
+        `
+            SELECT author AS authorId
+            FROM ${DBName}
+            WHERE id = ?
+        `,
+        id
+    )
+    const isSecretUser = !!token && authorId == JSON.parse(atob(token.split(".")[1])).id
+    
+    res.status(200).json({result: true, state: isSecretUser})
+})
+
 exports.detail = tryCatch(async(req, res, next) => {
     const { DBName, isAdmin, query } = req;
     const { boardId, boardType } = query;
@@ -183,7 +200,6 @@ exports.detail = tryCatch(async(req, res, next) => {
     const isPrevNext = ['recommendation', 'revenue', 'stock'];
     const isSecretField = ['vip', 'clinic'];
     const isSecret = isSecretField.includes(boardType);
-    const isBooleanField = ['new', 'secret', 'visible'];
     const isAdminTypeField = ['recommendation', 'revenue'];
     const isAdminImageField = ['stock'];
     let joinConditions = ''
@@ -213,12 +229,8 @@ exports.detail = tryCatch(async(req, res, next) => {
 
     // 이전, 다음 글
     if(!isAdmin && isPrevNext.includes(boardType)){
-        // fields.push(`(SELECT COUNT(*) FROM boards WHERE boardType = p.boardType AND created > (SELECT created FROM boards WHERE id = p.boardId)) AS prev`)
-        // fields.push(`(SELECT COUNT(*) FROM boards WHERE boardType = p.boardType AND created < (SELECT created FROM boards WHERE id = p.boardId)) AS next`)
         fields.push('prev')
         fields.push('next')
-        // fields.push(`(SELECT id FROM boards WHERE id < p.boardId AND boardType = p.boardType ORDER BY id DESC LIMIT 1) AS prev`)
-        // fields.push(`(SELECT id FROM boards WHERE id > p.boardId AND boardType = p.boardType ORDER BY id ASC LIMIT 1) AS next`)
     }
 
     
@@ -236,7 +248,6 @@ exports.detail = tryCatch(async(req, res, next) => {
         `,
         values
     )
-    console.log(data);
     
     data = data && { data: data }
 
@@ -258,14 +269,14 @@ exports.detail = tryCatch(async(req, res, next) => {
         data = {...data, post}
     }
     
-    if(isSecretField.includes(boardType) && data.data.secret === 'y'){
+    if(isSecretField.includes(boardType)){
         // access 토큰이 만료 되었을 때 ( refesh 토근 있음 ) access 토큰 새로 받아 올 수 있나?
         const token = req.cookies.userAccessToken;
         const [{ authorId }] = await dbQuery(
             
             `
                 SELECT author AS authorId
-                FROM ${req.DBName}
+                FROM ${DBName}
                 WHERE id = ?
             `,
             boardId

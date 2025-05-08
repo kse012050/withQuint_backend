@@ -48,6 +48,7 @@ exports.getFieldsAndValues = tryCatch(async(req, res, next) => {
     const keys = []
     const values = []
     let id = ''
+    console.log(req.body);
     
     Object.entries(req.body).forEach(([key, value])=>{
         if(value === 'y' || value === 'n'){

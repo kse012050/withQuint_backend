@@ -71,7 +71,7 @@ const imgRemove = async(DBName, id) => {
 function imgUrl(data){
     return data.map((item) =>
         Object.entries(item).reduce((acc, [key, value]) => {
-            acc[key] = key === "image" && value ? `http://${process.env.HOST}:${process.env.PORT}${value}` : value;
+            acc[key] = key === "image" && value ? `http://${process.env.IMAGE_HOST}:${process.env.PORT}${value}` : value;
             return acc;
         }, {})
     );

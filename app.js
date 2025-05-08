@@ -22,7 +22,7 @@ const db = mysql.createConnection({
     host: process.env.HOST,
     user: 'root',
     password: process.env.DB_PASSWORD,
-    database: 'withquint'
+    database: 'withQuint'
 })
 
 app.set('port', process.env.PORT || 8001);
@@ -36,6 +36,7 @@ app.use(cookieParser());
 
 app.use(cors({
     origin: 'http://localhost:3000',
+    // origin: 'http://54.180.90.84',
     credentials: true
 }))
 

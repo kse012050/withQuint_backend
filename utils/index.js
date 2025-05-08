@@ -61,7 +61,7 @@ const fieldsDataChange = (DBName, fields, isDataHangle) => {
         }
 
         if(name === 'image') {
-            return `CONCAT('http://${process.env.HOST}:${process.env.PORT}', image) AS image`;
+            return `CONCAT('http://${process.env.IMAGE_HOST}:${process.env.PORT}', image) AS image`;
         }
 
         if(name === 'prev'){

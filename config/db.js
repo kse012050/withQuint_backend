@@ -4,7 +4,7 @@ const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: process.env.DB_PASSWORD,
-    database: 'withquint'
+    database: 'withQuint'
 })
 
 module.exports = db;

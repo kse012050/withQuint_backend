@@ -1,4 +1,4 @@
-const { imgUrl, imgUpload, imgRemove } = require('../uploads');
+const { imgUpload, imgRemove } = require('../uploads');
 const { tryCatch, dbQuery, fieldsDataChange } = require('../utils');
 
 exports.create = tryCatch(async(req, res, next) => {
