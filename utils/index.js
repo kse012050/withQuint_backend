@@ -48,6 +48,10 @@ const fieldsDataChange = (DBName, fields, isDataHangle) => {
             return `${name} AS author`;
         }
         // 날짜 변경
+        if(name === 'listLogin') {
+            return `DATE_FORMAT(${tableField}, '%Y.%m.%d %H:%i:%s') AS ${name}`;
+        }
+        // 날짜 변경
         if(name === 'created') {
             return `DATE_FORMAT(${tableField}, '%Y.%m.%d') AS ${name}`;
         }

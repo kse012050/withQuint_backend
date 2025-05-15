@@ -17,6 +17,7 @@ const signUpRouter = require('./routes/signUp');
 const vipProductsRouter = require('./routes/vipProducts');
 const boardsRouter = require('./routes/boards');
 const adminRouter = require('./routes/admin');
+const usersRouter = require('./routes/users');
 
 const db = mysql.createConnection({
     host: process.env.HOST,
@@ -93,6 +94,7 @@ app.use('/signUp', signUpRouter);
 app.use('/vipProducts', vipProductsRouter);
 app.use('/boards', boardsRouter);
 app.use('/admin', adminRouter);
+app.use('/users', usersRouter);
 
 // 404 에러 미들웨어
 app.use((req, res, next)=>{

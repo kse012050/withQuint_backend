@@ -46,11 +46,12 @@ function tokenSaveData(user, name){
 
 exports.signIn = tryCatch(async(req, res, next) => {
     let { password } = req.body;
-    const name = !req.isAdmin ? 'user' : 'admin';
+    const { isAdmin } = req;
+    const name = !isAdmin ? 'user' : 'admin';
     let idName = `${name}Id`;
     let id = req.body[`${idName}`];
     const outputFields = ['id', 'password', idName];
-    if(req.isAdmin){
+    if(isAdmin){
         outputFields.push('isSuper')
     }
     
@@ -66,6 +67,18 @@ exports.signIn = tryCatch(async(req, res, next) => {
     if(state){
         tokenFuc(user, name)(res)
         req.session[name] = tokenSaveData(user, name)
+
+        // 최종 로그인
+        if(!isAdmin){
+            await dbQuery(
+                `
+                    UPDATE users
+                    SET listLogin = NOW()
+                    WHERE userId = ?;
+                `,
+                id
+            )
+        }
     }
 
     res.status(200).json({result: true, state, message, user: req.session.user})
