@@ -59,10 +59,9 @@ exports.signIn = tryCatch(async(req, res, next) => {
     const [ user ] = await dbQuery(`SELECT ${outputFields.join(',')} FROM ${req.DBName} WHERE ${idName} = ?`, id);
     
     // 유저 비밀번호 확인
-    const state = await bcrypt.compare(password, user.password);
+    const state = await bcrypt.compare(password, user?.password || '');
 
-    const message = state ? '로그인 성공' : '비밀번호가 일치하지 않습니다.';
-    
+    const message = state ? '로그인 성공' : '아이디 또는 비밀번호를 확인해주세요.';
     
     if(state){
         tokenFuc(user, name)(res)
@@ -73,7 +72,7 @@ exports.signIn = tryCatch(async(req, res, next) => {
             await dbQuery(
                 `
                     UPDATE users
-                    SET listLogin = NOW()
+                    SET lastLogin = NOW()
                     WHERE userId = ?;
                 `,
                 id

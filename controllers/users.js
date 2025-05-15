@@ -1,3 +1,4 @@
+const bcrypt = require('bcrypt');
 const { tryCatch, dbQuery, fieldsDataChange } = require("../utils");
 
 exports.read = tryCatch(async(req, res, next) => {
@@ -62,4 +63,30 @@ exports.update = tryCatch(async(req, res, next) => {
     );
 
     res.status(200).json({result: true, state: true, message: '수정되었습니다.'})
+})
+
+exports.resetPassword = tryCatch(async(req, res, next) => {
+    const { DBName, body: { id } } = req;
+    console.log(id);
+    
+
+    const [{ userId }] = await dbQuery(
+        `
+            SELECT userId
+            FROM ${DBName}
+            WHERE id = ?
+        `,
+        id
+    )
+
+    await dbQuery(
+        `
+            UPDATE ${DBName}
+            SET password = ?
+            WHERE id = ?
+        `,
+        [await bcrypt.hash(userId, 12), id]
+    )
+
+    res.status(200).json({result: true, state: true, message: '비밀번호가 재발급되었습니다.'})
 })
