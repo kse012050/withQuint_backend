@@ -48,13 +48,12 @@ exports.getFieldsAndValues = tryCatch(async(req, res, next) => {
     const keys = []
     const values = []
     let id = ''
-    console.log(req.body);
     
     Object.entries(req.body).forEach(([key, value])=>{
         if(value === 'y' || value === 'n'){
             value = value === 'y'
         }
-        if(key.includes('Id')){
+        if(key.includes('Id') || key.includes('id')){
             id = value;
         }else{
             keys.push(key);
