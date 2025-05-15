@@ -47,6 +47,7 @@ exports.main = tryCatch(async(req, res, next) => {
                                 ) AS row_num
                         FROM boards
                         WHERE boardType IN ('recommendation', 'revenue', 'stock', 'vip', 'clinic', 'notice')
+                        AND visible = 1
                     ) AS b
                     LEFT JOIN users u ON b.author = u.id
                     WHERE 
@@ -58,7 +59,7 @@ exports.main = tryCatch(async(req, res, next) => {
         `
     )
     
-    res.status(200).json({result: true, data})
+    res.status(200).json({result: true, state: true, data})
 })
 
 exports.create = tryCatch(async(req, res, next) => {
