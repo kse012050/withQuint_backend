@@ -36,8 +36,8 @@ app.use('/img', express.static(path.join(__dirname, 'uploads')));
 app.use(cookieParser());
 
 app.use(cors({
-    origin: 'http://localhost:3000',
-    // origin: 'http://54.180.90.84',
+    // origin: 'http://localhost:3000',
+    origin: 'http://3.34.52.106',
     credentials: true
 }))
 
