@@ -15,6 +15,7 @@ const authRouter = require('./routes/auth');
 const signInRouter = require('./routes/signIn');
 const signUpRouter = require('./routes/signUp');
 const findRouter = require('./routes/find');
+const infoRouter = require('./routes/info');
 const mobileAuthRouter = require('./routes/mobileAuth');
 const vipProductsRouter = require('./routes/vipProducts');
 const boardsRouter = require('./routes/boards');
@@ -80,7 +81,7 @@ app.use((req, res, next)=>{
         schemaName = schemaName.split('?')[0];
     }
     
-    if(schemaName.includes('sign') || schemaName.includes('mobileAuth') || schemaName.includes('find')){
+    if(schemaName.includes('sign') || schemaName.includes('mobileAuth') || schemaName.includes('find') || schemaName.includes('info')){
         schemaName = isAdmin ? 'admin' : 'users';
     }
 
@@ -95,6 +96,7 @@ app.use('/', authRouter);
 app.use('/signIn', signInRouter);
 app.use('/signUp', signUpRouter);
 app.use('/find', findRouter);
+app.use('/info', infoRouter);
 app.use('/mobileAuth', mobileAuthRouter);
 app.use('/vipProducts', vipProductsRouter);
 app.use('/boards', boardsRouter);
