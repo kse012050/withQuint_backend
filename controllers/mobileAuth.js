@@ -1,5 +1,5 @@
 const { tryCatch, dbQuery } = require('../utils');
-const redisClient = require('../utils/redisClient');
+// const redisClient = require('../utils/redisClient');
 const coolsms = require("coolsms-node-sdk").default;
 
 exports.mobileAuthSend = tryCatch(async(req, res) => {
