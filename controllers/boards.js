@@ -1,5 +1,5 @@
 const { imgUpload, imgUrl, imgRemove } = require('../uploads');
-const { tryCatch, dbQuery, fieldsDataChange } = require('../utils');
+const { tryCatch, dbQuery, fieldsDataChange, getImagePath } = require('../utils');
 const path = require('path');
 const fs = require('fs');
 
@@ -22,7 +22,7 @@ exports.main = tryCatch(async(req, res, next) => {
                             ),
                             CASE 
                                 WHEN boardType = 'stock' AND image IS NOT NULL THEN 
-                                    JSON_OBJECT('image', CONCAT('http://${process.env.IMAGE_HOST}:${process.env.PORT}', image))
+                                    JSON_OBJECT('image', CONCAT('${getImagePath()}', image))
                                 ELSE 
                                     JSON_OBJECT()  
                             END,

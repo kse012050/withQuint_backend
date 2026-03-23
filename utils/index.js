@@ -65,7 +65,7 @@ const fieldsDataChange = (DBName, fields, isDataHangle) => {
         }
 
         if(name === 'image') {
-            return `CONCAT('http://${process.env.IMAGE_HOST}:${process.env.PORT}', image) AS image`;
+            return `CONCAT('${getImagePath()}', image) AS image`;
         }
 
         if(name === 'prev'){
@@ -80,4 +80,11 @@ const fieldsDataChange = (DBName, fields, isDataHangle) => {
     });
 }
 
-module.exports = { tryCatch, dbQuery, jwtVerifyAsync, fieldsDataChange };
+const getImagePath = () => {
+    const os = require('os');
+    const isEC2 = os.hostname().startsWith('ip-'); 
+    const IMAGE_PREFIX = isEC2 ? 'WithQuant_api' : `http://${process.env.IMAGE_HOST}:${process.env.PORT}`;
+    return IMAGE_PREFIX;
+}
+
+module.exports = { tryCatch, dbQuery, jwtVerifyAsync, fieldsDataChange, getImagePath };
