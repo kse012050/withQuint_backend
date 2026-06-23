@@ -1,4 +1,3 @@
-const db = require("../config/db")
 const jwt = require("jsonwebtoken");
 
 const tryCatch = (fn) => {
@@ -8,6 +7,8 @@ const tryCatch = (fn) => {
 }
 
 const dbQuery = (sql, values) => {
+    const db = require("../config/db");
+
     return new Promise((resolve, reject) => {
         db.query(sql, values, (error, result) => {
             if(error){

@@ -1,4 +1,4 @@
-const { tryCatch, dbQuery } = require('../utils');
+const { tryCatch } = require('../utils');
 // const redisClient = require('../utils/redisClient');
 const coolsms = require("coolsms-node-sdk").default;
 
@@ -19,7 +19,7 @@ exports.mobileAuthSend = tryCatch(async(req, res) => {
     
     // await redisClient.set(`verify:${mobile}`, mobileAuthSend, { EX: 180 })
 
-    res.status(200).json({result: true, state: true,  message: `인증번호가 전송되었습니다.` });
+    res.status(200).json({result: true, state: true,  message: `인증번호가 전송되었습니다.\n인증코드는 111111입니다.` });
 })
 
 exports.mobileAuthCheck = tryCatch(async(req, res) => {
